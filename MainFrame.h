@@ -9,8 +9,10 @@ public:
 private:
 	void CreateOptions();
 
-	wxPanel* panel;
+	wxPanel* MainPanel;
 	wxStaticText* headingText;
+	wxPanel* InteractiveArea;
+	wxPanel* NavigationBar;
 	wxTextCtrl* textInput;
 	wxButton* createButton;
 	wxPanel* panel2;
