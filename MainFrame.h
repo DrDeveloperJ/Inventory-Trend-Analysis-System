@@ -13,8 +13,11 @@ private:
 	wxStaticText* headingText;
 	wxPanel* InteractiveArea;
 	wxPanel* NavigationBar;
-	wxTextCtrl* textInput;
+	wxPanel* ActiveArea;
+	wxTextCtrl* IDInput;
+	wxTextCtrl* ItemInput;
+	wxTextCtrl* QuantityInput;
 	wxButton* createButton;
-	wxPanel* panel2;
+	wxPanel* TreeviewTable;
 };
 
