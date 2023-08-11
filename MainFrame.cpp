@@ -7,31 +7,106 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 
 void MainFrame::CreateOptions()
 {
+	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
 	MainPanel = new wxPanel(this);
 	MainPanel->SetBackgroundColour(*wxRED);
 
+	//Creates a heading
 	headingText = new wxStaticText(MainPanel, wxID_ANY, "Stock Management Page",
 		wxPoint(0, 0), wxSize(1000, 100), wxALIGN_CENTER_HORIZONTAL);
 	headingText->SetBackgroundColour(*wxBLUE);
 	headingText->SetFont(headingFont);
 
+	/*This defines the rest of the page which will include the navigation bar on the left and the rest is what will
+	be interacted with by the user (this will be called ActiveArea) */
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
 	InteractiveArea->SetBackgroundColour(*wxGREEN);
 
+	//Navigation Bar for navigating between pages
+	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
 	NavigationBar->SetBackgroundColour(*wxYELLOW);
+	StockManage = new wxButton(NavigationBar, wxID_ANY, "Stock Manage", wxPoint(25, 120), wxSize(100, 75));
+	StockManage->SetBackgroundColour(*wxBLUE);
+	//-----------------------------------------------------------------------------------------------------
 
 	ActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
 	ActiveArea->SetBackgroundColour(*wxGREEN);
 
-	TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(425, 25), wxSize(400, 450));
+	//This will display all the stock to the user in a user friendly Treeview Table
+	TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
 	TreeviewTable->SetBackgroundColour(*wxWHITE);
 
-	IDInput = new wxTextCtrl(ActiveArea, wxID_ANY, "", wxPoint(125, 100), wxSize(200, 20));
-	ItemInput = new wxTextCtrl(ActiveArea, wxID_ANY, "", wxPoint(125, 125), wxSize(200, 20));
-	QuantityInput = new wxTextCtrl(ActiveArea, wxID_ANY, "", wxPoint(125, 150), wxSize(200, 20));
+	//This will allow the user to create a new item to add to the stock
+	//-----------------------------------------------------------------------------------------------------
+	wxFont SectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
+	CreateArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(125, 30), wxSize(200, 200));
+	CreateArea->SetBackgroundColour(*wxWHITE);
+	CreateHeading = new wxStaticText(CreateArea, wxID_ANY, "Create Item",
+		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+	CreateHeading->SetFont(SectionHeadingFont);
 
-	createButton = new wxButton(ActiveArea, wxID_ANY, "", wxPoint(325, 150), wxSize(50, 50));
+	CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
+	CreateIDInput->SetBackgroundColour(*wxBLUE);
+	CreateIDLabel = new wxStaticText(CreateArea, wxID_ANY, "Item ID",
+		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	CreateItemInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	CreateItemInput->SetBackgroundColour(*wxBLUE);
+	CreateItemLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Name",
+		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	CreateQuantityInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
+	CreateQuantityInput->SetBackgroundColour(*wxBLUE);
+	CreateQuantityLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Quantity",
+		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	createButton = new wxButton(CreateArea, wxID_ANY, "Create", wxPoint(75, 170), wxSize(50, 25));
 	createButton->SetBackgroundColour(*wxBLUE);
+	//-----------------------------------------------------------------------------------------------------
+
+	//This will allow the user to delete stock
+	//-----------------------------------------------------------------------------------------------------
+	DeleteArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(20, 250), wxSize(200, 200));
+	DeleteArea->SetBackgroundColour(*wxWHITE);
+	DeleteHeading = new wxStaticText(DeleteArea, wxID_ANY, "Delete Item",
+		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+	DeleteHeading->SetFont(SectionHeadingFont);
+
+	DeleteInput = new wxTextCtrl(DeleteArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	DeleteInput->SetBackgroundColour(*wxBLUE);
+	DeleteInputLabel = new wxStaticText(DeleteArea, wxID_ANY, "Item ID",
+		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	DeleteButton = new wxButton(DeleteArea, wxID_ANY, "Delete", wxPoint(75, 140), wxSize(50, 25));
+	DeleteButton->SetBackgroundColour(*wxBLUE);
+	//-----------------------------------------------------------------------------------------------------
+
+	//This will allow the user to update existing stock
+	//-----------------------------------------------------------------------------------------------------
+	UpdateArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(230, 250), wxSize(200, 200));
+	UpdateArea->SetBackgroundColour(*wxWHITE);
+	UpdateHeading = new wxStaticText(UpdateArea, wxID_ANY, "Update Item",
+		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+	UpdateHeading->SetFont(SectionHeadingFont);
+
+	UpdateIDInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
+	UpdateIDInput->SetBackgroundColour(*wxBLUE);
+	UpdateIDLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item ID",
+		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	UpdateItemInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	UpdateItemInput->SetBackgroundColour(*wxBLUE);
+	UpdateItemLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Name",
+		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	UpdateQuantityInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
+	UpdateQuantityInput->SetBackgroundColour(*wxBLUE);
+	UpdateQuantityLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Quantity",
+		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	UpdateButton = new wxButton(UpdateArea, wxID_ANY, "Update", wxPoint(75, 170), wxSize(50, 25));
+	UpdateButton->SetBackgroundColour(*wxBLUE);
+	//-----------------------------------------------------------------------------------------------------
 }

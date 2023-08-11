@@ -1,2 +1,3 @@
 ﻿  MainFrame.cpp
+wxbase32ud.lib(extended.obj) : warning LNK4099: PDB 'wxbase32ud.pdb' was not found with 'wxbase32ud.lib(extended.obj)' or at 'C:\Users\Kamal\Desktop\Inventory Trend Analysis System\x64\Debug\wxbase32ud.pdb'; linking object as if no debug info
   Inventory Trend Analysis System.vcxproj -> C:\Users\Kamal\Desktop\Inventory Trend Analysis System\x64\Debug\Inventory Trend Analysis System.exe
