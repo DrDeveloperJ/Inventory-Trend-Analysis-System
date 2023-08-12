@@ -1,4 +1,35 @@
 #include "MainFrame.h"
+#include <mysql.h>
+#pragma comment(lib, "\libmysql.lib")
+
+struct connection_details {
+	const char* server, * user, * password, * database;
+};
+
+MYSQL* mysql_connection_setup(struct connection_details mysql_details)
+{
+	MYSQL* connection = mysql_init(NULL);
+
+	if (!mysql_real_connect(connection, mysql_details.server, mysql_details.user,
+		mysql_details.password, mysql_details.database, 0, NULL, 0))
+	{
+		std::cout << "Connection Error: " << mysql_error(connection) << "/n";
+		exit(1);
+	}
+
+	return connection;
+}
+
+MYSQL_RES* mysql_execute_query(MYSQL *connection, const char* sql_query)
+{
+	if (mysql_query(connection, sql_query))
+	{
+		std::cout << "MySQL Query Error :" << mysql_error(connection) << "/n";
+		exit(1);
+	}
+
+	return mysql_use_result(connection);
+}
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 {
@@ -7,6 +38,27 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 
 void MainFrame::CreateOptions()
 {
+	MYSQL* SQLConnection;
+	MYSQL_RES* SQLResults;
+	MYSQL_ROW row;
+
+	struct connection_details mysqlD;
+	mysqlD.server = "localhost";
+	mysqlD.user = "";
+	mysqlD.password = "Admin475!";
+	mysqlD.database = "";
+
+	SQLConnection = mysql_connection_setup(mysqlD);
+	SQLResults = mysql_execute_query(SQLConnection, "select * from itemtable");
+
+	while ((row = mysql_fetch_row(SQLResults)) != NULL)
+	{
+		std::cout << row[0];
+	}
+
+	mysql_free_result(SQLResults);
+	mysql_close(SQLConnection);
+
 	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
 	MainPanel = new wxPanel(this);
