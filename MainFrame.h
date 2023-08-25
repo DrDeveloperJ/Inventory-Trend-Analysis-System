@@ -43,5 +43,7 @@ private:
 	wxButton* UpdateButton;
 
 	wxPanel* TreeviewTable;
+	wxStaticText* DisplayItemName;
+	wxStaticText* DisplayItemQuantity;
+	wxStaticText* DisplayItemID;
 };
-

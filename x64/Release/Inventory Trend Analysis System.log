@@ -1,0 +1,11 @@
+﻿  MainFrame.cpp
+C:\Users\Kamal\Desktop\Inventory Trend Analysis System\stdafx.h(14,1): warning C4005: 'STRICT': macro redefinition
+C:\wxWidgets-3.2.2.1\include\wx\msw\wrapwin.h(21): message : see previous definition of 'STRICT'
+C:\Users\Kamal\Desktop\Inventory Trend Analysis System\stdafx.h(17,1): warning C4005: '_SECURE_SCL': macro redefinition
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\yvals.h(117): message : see previous definition of '_SECURE_SCL'
+  Generating code
+  1 of 569 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Inventory Trend Analysis System.vcxproj -> C:\Users\Kamal\Desktop\Inventory Trend Analysis System\x64\Release\Inventory Trend Analysis System.exe

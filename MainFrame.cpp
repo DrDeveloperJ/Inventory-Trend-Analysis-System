@@ -1,35 +1,13 @@
 #include "MainFrame.h"
-#include <mysql.h>
-#pragma comment(lib, "\libmysql.lib")
+#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include "stdafx.h"
 
-struct connection_details {
-	const char* server, * user, * password, * database;
-};
-
-MYSQL* mysql_connection_setup(struct connection_details mysql_details)
-{
-	MYSQL* connection = mysql_init(NULL);
-
-	if (!mysql_real_connect(connection, mysql_details.server, mysql_details.user,
-		mysql_details.password, mysql_details.database, 0, NULL, 0))
-	{
-		std::cout << "Connection Error: " << mysql_error(connection) << "/n";
-		exit(1);
-	}
-
-	return connection;
-}
-
-MYSQL_RES* mysql_execute_query(MYSQL *connection, const char* sql_query)
-{
-	if (mysql_query(connection, sql_query))
-	{
-		std::cout << "MySQL Query Error :" << mysql_error(connection) << "/n";
-		exit(1);
-	}
-
-	return mysql_use_result(connection);
-}
+#include "mysql_connection.h"
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/prepared_statement.h>
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 {
@@ -38,26 +16,56 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 
 void MainFrame::CreateOptions()
 {
-	MYSQL* SQLConnection;
-	MYSQL_RES* SQLResults;
-	MYSQL_ROW row;
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://127.0.0.1:3306";
+	const std::string username = "root";
+	const std::string password = "";
 
-	struct connection_details mysqlD;
-	mysqlD.server = "localhost";
-	mysqlD.user = "";
-	mysqlD.password = "Admin475!";
-	mysqlD.database = "";
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
 
-	SQLConnection = mysql_connection_setup(mysqlD);
-	SQLResults = mysql_execute_query(SQLConnection, "select * from itemtable");
-
-	while ((row = mysql_fetch_row(SQLResults)) != NULL)
+	try
 	{
-		std::cout << row[0];
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
 	}
 
-	mysql_free_result(SQLResults);
-	mysql_close(SQLConnection);
+	con->setSchema("itemdatabase");
+
+	pstmt = con->prepareStatement("SELECT * FROM itemtable;");
+	result = pstmt->executeQuery();
+	//-----------------------------------------------------------------------------------------------------
+
+	//stmt->execute("DROP TABLE IF EXISTS inventory");
+	//cout << "Finished dropping table (if existed)" << endl;
+
+	//stmt->execute("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50), quantity INTEGER);");
+	//out << "Finished creating table" << endl;
+
+	/*
+	pstmt = con->prepareStatement("INSERT INTO itemtable(ItemName, ItemQuantity, ItemID) VALUES(?, ?, ?)");
+	pstmt->setString(1, "banana");
+	pstmt->setInt(2, 150);
+	pstmt->setString(2, "EH819");
+	pstmt->execute();
+	cout << "One row inserted." << endl;
+
+	
+	pstmt->setString(1, "orange");
+	pstmt->setInt(2, 154);
+	pstmt->setString(2, "O201JK");
+	pstmt->execute();
+	cout << "One row inserted." << endl;
+	*/
 
 	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
@@ -75,6 +83,7 @@ void MainFrame::CreateOptions()
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
 	InteractiveArea->SetBackgroundColour(*wxGREEN);
 
+
 	//Navigation Bar for navigating between pages
 	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
@@ -90,6 +99,31 @@ void MainFrame::CreateOptions()
 	TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
 	TreeviewTable->SetBackgroundColour(*wxWHITE);
 
+
+	//Loops through the database and inserts all the current data into the treeview table
+	//-----------------------------------------------------------------------------------------------------
+	int YPos{ 0 };
+
+	while (result->next())
+	{
+		sql::SQLString ItemName{ result->getString("ItemName") };
+		wxString wxItemName{ wxString::FromUTF8(ItemName.c_str()) };
+		//sql::SQLString ItemQuantity{ result->getInt("ItemQuantity") };
+		wxString wxItemQuantity{ wxString::Format(wxT("%d"), result->getInt("ItemQuantity"))};
+		sql::SQLString ItemID{ result->getString("ItemID") };
+		wxString wxItemID{ wxString::FromUTF8(ItemID.c_str()) };
+
+		DisplayItemName = new wxStaticText(TreeviewTable, wxID_ANY, wxItemName,
+			wxPoint(50, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+		DisplayItemQuantity = new wxStaticText(TreeviewTable, wxID_ANY, wxItemQuantity,
+			wxPoint(150, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+		DisplayItemID = new wxStaticText(TreeviewTable, wxID_ANY, wxItemID,
+			wxPoint(250, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+		YPos += 20;
+	}
+	//-----------------------------------------------------------------------------------------------------
+
 	//This will allow the user to create a new item to add to the stock
 	//-----------------------------------------------------------------------------------------------------
 	wxFont SectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
@@ -97,6 +131,7 @@ void MainFrame::CreateOptions()
 	CreateArea->SetBackgroundColour(*wxWHITE);
 	CreateHeading = new wxStaticText(CreateArea, wxID_ANY, "Create Item",
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+	wxString test{ "Hello" };
 	CreateHeading->SetFont(SectionHeadingFont);
 
 	CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
@@ -161,4 +196,8 @@ void MainFrame::CreateOptions()
 	UpdateButton = new wxButton(UpdateArea, wxID_ANY, "Update", wxPoint(75, 170), wxSize(50, 25));
 	UpdateButton->SetBackgroundColour(*wxBLUE);
 	//-----------------------------------------------------------------------------------------------------
+
+	delete pstmt;
+	delete con;
+	system("pause");
 }

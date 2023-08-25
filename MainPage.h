@@ -6,4 +6,3 @@ class MainPage : public wxApp
 public:
 	bool OnInit();
 };
-

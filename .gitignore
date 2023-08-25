@@ -3,3 +3,6 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.vs/
+*stdafx.h
+*SciLexer.h
+*Scintilla.h
