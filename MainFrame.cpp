@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include "stdafx.h"
+#include <cstdlib>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
@@ -14,8 +15,14 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 	CreateOptions();
 }
 
-void MainFrame::CreateOptions()
+wxListView* MainFrame::basicListView = nullptr;
+
+//Loops through the database and inserts all the current data into the treeview table
+//-----------------------------------------------------------------------------------------------------
+void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 {
+	int YPos{ 0 };
+
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
 	const std::string server = "tcp://127.0.0.1:3306";
@@ -24,7 +31,7 @@ void MainFrame::CreateOptions()
 
 	sql::Driver* driver;
 	sql::Connection* con;
-	sql::PreparedStatement* pstmt;
+	static sql::PreparedStatement* pstmt;
 	sql::ResultSet* result;
 
 	try
@@ -34,7 +41,7 @@ void MainFrame::CreateOptions()
 	}
 	catch (sql::SQLException e)
 	{
-		cout << "Could not connect to server. Error message: " << e.what() << endl;
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
 		system("pause");
 		exit(1);
 	}
@@ -45,6 +52,27 @@ void MainFrame::CreateOptions()
 	result = pstmt->executeQuery();
 	//-----------------------------------------------------------------------------------------------------
 
+	while (result->next())
+	{
+		sql::SQLString ItemName{ result->getString("ItemName") };
+		wxString wxItemName{ wxString::FromUTF8(ItemName.c_str()) };
+		//sql::SQLString ItemQuantity{ result->getInt("ItemQuantity") };
+		wxString wxItemQuantity{ wxString::Format(wxT("%d"), result->getInt("ItemQuantity")) };
+		sql::SQLString ItemID{ result->getString("ItemID") };
+		wxString wxItemID{ wxString::FromUTF8(ItemID.c_str()) };
+
+		basicListView->InsertItem(0, wxItemName);
+		basicListView->SetItem(0, 1, wxItemQuantity);
+		basicListView->SetItem(0, 2, wxItemID);
+	};
+
+	delete pstmt;
+	delete con;
+};
+//-----------------------------------------------------------------------------------------------------
+
+void MainFrame::CreateOptions()
+{
 	//stmt->execute("DROP TABLE IF EXISTS inventory");
 	//cout << "Finished dropping table (if existed)" << endl;
 
@@ -59,7 +87,7 @@ void MainFrame::CreateOptions()
 	pstmt->execute();
 	cout << "One row inserted." << endl;
 
-	
+
 	pstmt->setString(1, "orange");
 	pstmt->setInt(2, 154);
 	pstmt->setString(2, "O201JK");
@@ -83,7 +111,6 @@ void MainFrame::CreateOptions()
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
 	InteractiveArea->SetBackgroundColour(*wxGREEN);
 
-
 	//Navigation Bar for navigating between pages
 	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
@@ -92,37 +119,24 @@ void MainFrame::CreateOptions()
 	StockManage->SetBackgroundColour(*wxBLUE);
 	//-----------------------------------------------------------------------------------------------------
 
-	ActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
+	static wxPanel* ActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
 	ActiveArea->SetBackgroundColour(*wxGREEN);
 
 	//This will display all the stock to the user in a user friendly Treeview Table
-	TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
+	static wxPanel* TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
 	TreeviewTable->SetBackgroundColour(*wxWHITE);
 
+	MainFrame:basicListView = new wxListView(TreeviewTable);
+
+	basicListView->AppendColumn("ItemName");
+	basicListView->AppendColumn("ItemQuantity");
+	basicListView->AppendColumn("ItemID");
+	basicListView->SetColumnWidth(0, 80);
+	basicListView->SetColumnWidth(1, 80);
+	basicListView->SetColumnWidth(2, 80);
 
 	//Loops through the database and inserts all the current data into the treeview table
-	//-----------------------------------------------------------------------------------------------------
-	int YPos{ 0 };
-
-	while (result->next())
-	{
-		sql::SQLString ItemName{ result->getString("ItemName") };
-		wxString wxItemName{ wxString::FromUTF8(ItemName.c_str()) };
-		//sql::SQLString ItemQuantity{ result->getInt("ItemQuantity") };
-		wxString wxItemQuantity{ wxString::Format(wxT("%d"), result->getInt("ItemQuantity"))};
-		sql::SQLString ItemID{ result->getString("ItemID") };
-		wxString wxItemID{ wxString::FromUTF8(ItemID.c_str()) };
-
-		DisplayItemName = new wxStaticText(TreeviewTable, wxID_ANY, wxItemName,
-			wxPoint(50, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
-		DisplayItemQuantity = new wxStaticText(TreeviewTable, wxID_ANY, wxItemQuantity,
-			wxPoint(150, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
-		DisplayItemID = new wxStaticText(TreeviewTable, wxID_ANY, wxItemID,
-			wxPoint(250, YPos), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
-
-		YPos += 20;
-	}
-	//-----------------------------------------------------------------------------------------------------
+	StartTreeview(TreeviewTable, basicListView);
 
 	//This will allow the user to create a new item to add to the stock
 	//-----------------------------------------------------------------------------------------------------
@@ -131,26 +145,39 @@ void MainFrame::CreateOptions()
 	CreateArea->SetBackgroundColour(*wxWHITE);
 	CreateHeading = new wxStaticText(CreateArea, wxID_ANY, "Create Item",
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
-	wxString test{ "Hello" };
 	CreateHeading->SetFont(SectionHeadingFont);
 
 	CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
 	CreateIDInput->SetBackgroundColour(*wxBLUE);
+	wxString EnteredCreateID = CreateIDInput->GetValue();
 	CreateIDLabel = new wxStaticText(CreateArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	CreateItemInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
 	CreateItemInput->SetBackgroundColour(*wxBLUE);
+	wxString EnteredCreateItem = CreateItemInput->GetValue();
 	CreateItemLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Name",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	CreateQuantityInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
 	CreateQuantityInput->SetBackgroundColour(*wxBLUE);
+	wxString EnteredCreateQuantity = CreateQuantityInput->GetValue();
 	CreateQuantityLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	createButton = new wxButton(CreateArea, wxID_ANY, "Create", wxPoint(75, 170), wxSize(50, 25));
 	createButton->SetBackgroundColour(*wxBLUE);
+	createButton->Bind(wxEVT_BUTTON, [EnteredCreateID, EnteredCreateItem, EnteredCreateQuantity](wxCommandEvent& event) {
+
+		//NOW MAYBE CALL A FUNCTION OR DO IT IN HERE WHERE IF THE DETAILS ENTERED ARE VALIDATED,
+		//THEN THEY ARE INSERTED INTO THE DATABASE
+
+		//Resets the Treeview Table to empty for refilling
+		basicListView->DeleteAllItems();
+
+		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(TreeviewTable, basicListView);
+		});
 	//-----------------------------------------------------------------------------------------------------
 
 	//This will allow the user to delete stock
@@ -197,7 +224,5 @@ void MainFrame::CreateOptions()
 	UpdateButton->SetBackgroundColour(*wxBLUE);
 	//-----------------------------------------------------------------------------------------------------
 
-	delete pstmt;
-	delete con;
 	system("pause");
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <wx/wx.h>
+#include <wx/listctrl.h>
 
 class MainFrame : public wxFrame
 {
@@ -25,6 +26,7 @@ private:
 	wxTextCtrl* CreateQuantityInput;
 	wxStaticText* CreateQuantityLabel;
 	wxButton* createButton;
+	//void CreateButtonClicked(wxCommandEvent& evt);
 
 	wxPanel* DeleteArea;
 	wxStaticText* DeleteHeading;
@@ -43,7 +45,8 @@ private:
 	wxButton* UpdateButton;
 
 	wxPanel* TreeviewTable;
-	wxStaticText* DisplayItemName;
-	wxStaticText* DisplayItemQuantity;
-	wxStaticText* DisplayItemID;
+	static wxListView* basicListView;
+	//static wxStaticText* DisplayItemName;
+	//static wxStaticText* DisplayItemQuantity;
+	//static wxStaticText* DisplayItemID;
 };
