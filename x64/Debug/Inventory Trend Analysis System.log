@@ -1,5 +1,0 @@
-﻿  MainFrame.cpp
-C:\Users\Kamal\Desktop\Inventory Trend Analysis System\stdafx.h(14,1): warning C4005: 'STRICT': macro redefinition
-C:\wxWidgets-3.2.2.1\include\wx\msw\wrapwin.h(21): message : see previous definition of 'STRICT'
-wxbase32ud.lib(extended.obj) : warning LNK4099: PDB 'wxbase32ud.pdb' was not found with 'wxbase32ud.lib(extended.obj)' or at 'C:\Users\Kamal\Desktop\Inventory Trend Analysis System\x64\Debug\wxbase32ud.pdb'; linking object as if no debug info
-  Inventory Trend Analysis System.vcxproj -> C:\Users\Kamal\Desktop\Inventory Trend Analysis System\x64\Debug\Inventory Trend Analysis System.exe
