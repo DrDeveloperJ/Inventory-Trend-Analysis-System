@@ -31,7 +31,7 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 
 	sql::Driver* driver;
 	sql::Connection* con;
-	static sql::PreparedStatement* pstmt;
+	sql::PreparedStatement* pstmt;
 	sql::ResultSet* result;
 
 	try
@@ -147,30 +147,75 @@ void MainFrame::CreateOptions()
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 	CreateHeading->SetFont(SectionHeadingFont);
 
-	CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
+	static wxTextCtrl* CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
 	CreateIDInput->SetBackgroundColour(*wxBLUE);
-	wxString EnteredCreateID = CreateIDInput->GetValue();
 	CreateIDLabel = new wxStaticText(CreateArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
-	CreateItemInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	static wxTextCtrl* CreateItemInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
 	CreateItemInput->SetBackgroundColour(*wxBLUE);
-	wxString EnteredCreateItem = CreateItemInput->GetValue();
 	CreateItemLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Name",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
-	CreateQuantityInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
+	static wxTextCtrl* CreateQuantityInput = new wxTextCtrl(CreateArea, wxID_ANY, "0", wxPoint(5, 140), wxSize(190, 20));
 	CreateQuantityInput->SetBackgroundColour(*wxBLUE);
-	wxString EnteredCreateQuantity = CreateQuantityInput->GetValue();
 	CreateQuantityLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	createButton = new wxButton(CreateArea, wxID_ANY, "Create", wxPoint(75, 170), wxSize(50, 25));
 	createButton->SetBackgroundColour(*wxBLUE);
-	createButton->Bind(wxEVT_BUTTON, [EnteredCreateID, EnteredCreateItem, EnteredCreateQuantity](wxCommandEvent& event) {
+	createButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
 		//NOW MAYBE CALL A FUNCTION OR DO IT IN HERE WHERE IF THE DETAILS ENTERED ARE VALIDATED,
 		//THEN THEY ARE INSERTED INTO THE DATABASE
+
+		bool UniqueID = true;
+
+		wxString EnteredCreateID = CreateIDInput->GetValue();
+		int EnteredCreateQuantity = wxAtoi(CreateQuantityInput->GetValue());
+		wxString EnteredCreateItem = CreateItemInput->GetValue();
+
+		//wxLogMessage(wxT("The value of it is %s"), testty);
+
+		if ((EnteredCreateQuantity >= 0) && (UniqueID == true))
+		{
+			//Establishes a connection with the MySQL Database
+			//-----------------------------------------------------------------------------------------------------
+			const std::string server = "tcp://127.0.0.1:3306";
+			const std::string username = "root";
+			const std::string password = "";
+
+			sql::Driver* driver;
+			sql::Connection* con;
+			sql::PreparedStatement* pstmt;
+
+			try
+			{
+				driver = get_driver_instance();
+				con = driver->connect(server, username, password);
+			}
+			catch (sql::SQLException e)
+			{
+				//cout << "Could not connect to server. Error message: " << e.what() << endl;
+				system("pause");
+				exit(1);
+			}
+
+			con->setSchema("itemdatabase");
+
+			//const sql::SQLString SQLEnteredCreateItem(EnteredCreateItem.mb_str());
+			//const sql::SQLString SQLEnteredCreateID(EnteredCreateID.mb_str());
+
+			pstmt = con->prepareStatement("INSERT INTO itemtable(ItemName, ItemQuantity, ItemID) VALUES(?,?,?)");
+			pstmt->setString(1, EnteredCreateItem.ToStdString());
+			pstmt->setInt(2, EnteredCreateQuantity);
+			pstmt->setString(3, EnteredCreateID.ToStdString());
+			pstmt->executeQuery();
+			//-----------------------------------------------------------------------------------------------------
+
+			delete pstmt;
+			delete con;
+		}
 
 		//Resets the Treeview Table to empty for refilling
 		basicListView->DeleteAllItems();
@@ -223,6 +268,4 @@ void MainFrame::CreateOptions()
 	UpdateButton = new wxButton(UpdateArea, wxID_ANY, "Update", wxPoint(75, 170), wxSize(50, 25));
 	UpdateButton->SetBackgroundColour(*wxBLUE);
 	//-----------------------------------------------------------------------------------------------------
-
-	system("pause");
 }
