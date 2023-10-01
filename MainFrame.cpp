@@ -166,56 +166,66 @@ void MainFrame::CreateOptions()
 	createButton->SetBackgroundColour(*wxBLUE);
 	createButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
-		//NOW MAYBE CALL A FUNCTION OR DO IT IN HERE WHERE IF THE DETAILS ENTERED ARE VALIDATED,
-		//THEN THEY ARE INSERTED INTO THE DATABASE
+		//Establishes a connection with the MySQL Database
+		//-----------------------------------------------------------------------------------------------------
+		const std::string server = "tcp://127.0.0.1:3306";
+		const std::string username = "root";
+		const std::string password = "";
 
-		bool UniqueID = true;
+		sql::Driver* driver;
+		sql::Connection* con;
+		sql::PreparedStatement* pstmt;
+		sql::ResultSet* result;
 
+		try
+		{
+			driver = get_driver_instance();
+			con = driver->connect(server, username, password);
+		}
+		catch (sql::SQLException e)
+		{
+			//cout << "Could not connect to server. Error message: " << e.what() << endl;
+			system("pause");
+			exit(1);
+		}
+
+		con->setSchema("itemdatabase");
+		//-----------------------------------------------------------------------------------------------------
+
+		//Grab Values
+		//---------------------------------------------------------------------
 		wxString EnteredCreateID = CreateIDInput->GetValue();
 		int EnteredCreateQuantity = wxAtoi(CreateQuantityInput->GetValue());
 		wxString EnteredCreateItem = CreateItemInput->GetValue();
+		//---------------------------------------------------------------------
 
-		//wxLogMessage(wxT("The value of it is %s"), testty);
+		bool UniqueID = true;
+
+		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
+		pstmt->setString(1, EnteredCreateID.ToStdString());
+		result = pstmt->executeQuery();
+
+		while (result->next())
+		{
+			string CheckID = result->getString(3).c_str();
+			if (CheckID == EnteredCreateID)
+			{
+				UniqueID = false;
+			}
+		}
 
 		if ((EnteredCreateQuantity >= 0) && (UniqueID == true))
 		{
-			//Establishes a connection with the MySQL Database
-			//-----------------------------------------------------------------------------------------------------
-			const std::string server = "tcp://127.0.0.1:3306";
-			const std::string username = "root";
-			const std::string password = "";
-
-			sql::Driver* driver;
-			sql::Connection* con;
-			sql::PreparedStatement* pstmt;
-
-			try
-			{
-				driver = get_driver_instance();
-				con = driver->connect(server, username, password);
-			}
-			catch (sql::SQLException e)
-			{
-				//cout << "Could not connect to server. Error message: " << e.what() << endl;
-				system("pause");
-				exit(1);
-			}
-
-			con->setSchema("itemdatabase");
-
-			//const sql::SQLString SQLEnteredCreateItem(EnteredCreateItem.mb_str());
-			//const sql::SQLString SQLEnteredCreateID(EnteredCreateID.mb_str());
-
 			pstmt = con->prepareStatement("INSERT INTO itemtable(ItemName, ItemQuantity, ItemID) VALUES(?,?,?)");
 			pstmt->setString(1, EnteredCreateItem.ToStdString());
 			pstmt->setInt(2, EnteredCreateQuantity);
 			pstmt->setString(3, EnteredCreateID.ToStdString());
 			pstmt->executeQuery();
-			//-----------------------------------------------------------------------------------------------------
-
-			delete pstmt;
-			delete con;
 		}
+
+		delete pstmt;
+		delete con;
+		delete result;
 
 		//Resets the Treeview Table to empty for refilling
 		basicListView->DeleteAllItems();
