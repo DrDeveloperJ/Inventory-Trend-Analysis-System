@@ -211,6 +211,7 @@ void MainFrame::CreateOptions()
 			if (CheckID == EnteredCreateID)
 			{
 				UniqueID = false;
+				break;
 			}
 		}
 
@@ -243,13 +244,79 @@ void MainFrame::CreateOptions()
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 	DeleteHeading->SetFont(SectionHeadingFont);
 
-	DeleteInput = new wxTextCtrl(DeleteArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	static wxTextCtrl* DeleteInput = new wxTextCtrl(DeleteArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
 	DeleteInput->SetBackgroundColour(*wxBLUE);
 	DeleteInputLabel = new wxStaticText(DeleteArea, wxID_ANY, "Item ID",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	DeleteButton = new wxButton(DeleteArea, wxID_ANY, "Delete", wxPoint(75, 140), wxSize(50, 25));
 	DeleteButton->SetBackgroundColour(*wxBLUE);
+	DeleteButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+
+		//Establishes a connection with the MySQL Database
+		//-----------------------------------------------------------------------------------------------------
+		const std::string server = "tcp://127.0.0.1:3306";
+		const std::string username = "root";
+		const std::string password = "";
+
+		sql::Driver* driver;
+		sql::Connection* con;
+		sql::PreparedStatement* pstmt;
+		sql::ResultSet* result;
+
+		try
+		{
+			driver = get_driver_instance();
+			con = driver->connect(server, username, password);
+		}
+		catch (sql::SQLException e)
+		{
+			//cout << "Could not connect to server. Error message: " << e.what() << endl;
+			system("pause");
+			exit(1);
+		}
+
+		con->setSchema("itemdatabase");
+		//-----------------------------------------------------------------------------------------------------
+
+		//Grab Value
+		//---------------------------------------------------------------------
+		wxString EnteredDeleteID = DeleteInput->GetValue();
+		//---------------------------------------------------------------------
+
+		bool IDFound = false;
+
+		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
+		pstmt->setString(1, EnteredDeleteID.ToStdString());
+		result = pstmt->executeQuery();
+
+		while (result->next())
+		{
+			string CheckID = result->getString(3).c_str();
+			if (CheckID == EnteredDeleteID)
+			{
+				IDFound = true;
+				break;
+			}
+		}
+
+		if (IDFound == true)
+		{
+			pstmt = con->prepareStatement("DELETE FROM itemtable WHERE ItemID = ?");
+			pstmt->setString(1, EnteredDeleteID.ToStdString());
+			pstmt->executeQuery();
+		}
+
+		delete pstmt;
+		delete con;
+		delete result;
+
+		//Resets the Treeview Table to empty for refilling
+		basicListView->DeleteAllItems();
+
+		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(TreeviewTable, basicListView);
+		});
 	//-----------------------------------------------------------------------------------------------------
 
 	//This will allow the user to update existing stock
