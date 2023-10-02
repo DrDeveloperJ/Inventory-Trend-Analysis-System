@@ -73,37 +73,15 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 
 void MainFrame::CreateOptions()
 {
-	//stmt->execute("DROP TABLE IF EXISTS inventory");
-	//cout << "Finished dropping table (if existed)" << endl;
-
-	//stmt->execute("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50), quantity INTEGER);");
-	//out << "Finished creating table" << endl;
-
-	/*
-	pstmt = con->prepareStatement("INSERT INTO itemtable(ItemName, ItemQuantity, ItemID) VALUES(?, ?, ?)");
-	pstmt->setString(1, "banana");
-	pstmt->setInt(2, 150);
-	pstmt->setString(2, "EH819");
-	pstmt->execute();
-	cout << "One row inserted." << endl;
-
-
-	pstmt->setString(1, "orange");
-	pstmt->setInt(2, 154);
-	pstmt->setString(2, "O201JK");
-	pstmt->execute();
-	cout << "One row inserted." << endl;
-	*/
-
 	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
 	MainPanel = new wxPanel(this);
 	MainPanel->SetBackgroundColour(*wxRED);
 
 	//Creates a heading
-	headingText = new wxStaticText(MainPanel, wxID_ANY, "Stock Management Page",
+	static wxStaticText* headingText = new wxStaticText(MainPanel, wxID_ANY, "Stock Management Page",
 		wxPoint(0, 0), wxSize(1000, 100), wxALIGN_CENTER_HORIZONTAL);
-	headingText->SetBackgroundColour(*wxBLUE);
+	headingText->SetBackgroundColour(*wxWHITE);
 	headingText->SetFont(headingFont);
 
 	/*This defines the rest of the page which will include the navigation bar on the left and the rest is what will
@@ -111,19 +89,54 @@ void MainFrame::CreateOptions()
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
 	InteractiveArea->SetBackgroundColour(*wxGREEN);
 
+	//StockActive is the Stock Management page
+	static wxPanel* StockActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
+	StockActiveArea->SetBackgroundColour(*wxGREEN);
+	//AnalysisActiveArea is the Analysis page
+	static wxPanel* AnalysisActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
+	AnalysisActiveArea->SetBackgroundColour(*wxGREEN);
+	AnalysisActiveArea->Show(false);
+	//StockActive area is the SellSystem page
+	static wxPanel* SellActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
+	SellActiveArea->SetBackgroundColour(*wxGREEN);
+	SellActiveArea->Show(false);
+
 	//Navigation Bar for navigating between pages
 	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
 	NavigationBar->SetBackgroundColour(*wxYELLOW);
+
+	AnalysisPage = new wxButton(NavigationBar, wxID_ANY, "Sell System", wxPoint(25, 20), wxSize(100, 75));
+	AnalysisPage->SetBackgroundColour(*wxBLUE);
+	AnalysisPage->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+		StockActiveArea->Show(false);
+		SellActiveArea->Show(false);
+		AnalysisActiveArea->Show(true);
+		headingText->SetLabel(wxT("Analysis Page"));
+		headingText->Refresh();
+		});
 	StockManage = new wxButton(NavigationBar, wxID_ANY, "Stock Manage", wxPoint(25, 120), wxSize(100, 75));
 	StockManage->SetBackgroundColour(*wxBLUE);
+	StockManage->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+		AnalysisActiveArea->Show(false);
+		SellActiveArea->Show(false);
+		StockActiveArea->Show(true);
+		headingText->SetLabel(wxT("Stock Management Page"));
+		headingText->Refresh();
+		});
+	SellSystem = new wxButton(NavigationBar, wxID_ANY, "Sell System", wxPoint(25, 220), wxSize(100, 75));
+	SellSystem->SetBackgroundColour(*wxBLUE);
+	SellSystem->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+		AnalysisActiveArea->Show(false);
+		StockActiveArea->Show(false);
+		SellActiveArea->Show(true);
+		headingText->SetLabel(wxT("Sell System"));
+		headingText->Refresh();
+		});
 	//-----------------------------------------------------------------------------------------------------
 
-	static wxPanel* ActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	ActiveArea->SetBackgroundColour(*wxGREEN);
-
 	//This will display all the stock to the user in a user friendly Treeview Table
-	static wxPanel* TreeviewTable = new wxPanel(ActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
+	static wxPanel* TreeviewTable = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
 	TreeviewTable->SetBackgroundColour(*wxWHITE);
 
 	MainFrame:basicListView = new wxListView(TreeviewTable);
@@ -141,7 +154,7 @@ void MainFrame::CreateOptions()
 	//This will allow the user to create a new item to add to the stock
 	//-----------------------------------------------------------------------------------------------------
 	wxFont SectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
-	CreateArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(125, 30), wxSize(200, 200));
+	CreateArea = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(125, 30), wxSize(200, 200));
 	CreateArea->SetBackgroundColour(*wxWHITE);
 	CreateHeading = new wxStaticText(CreateArea, wxID_ANY, "Create Item",
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
@@ -238,7 +251,7 @@ void MainFrame::CreateOptions()
 
 	//This will allow the user to delete stock
 	//-----------------------------------------------------------------------------------------------------
-	DeleteArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(20, 250), wxSize(200, 200));
+	DeleteArea = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(20, 250), wxSize(200, 200));
 	DeleteArea->SetBackgroundColour(*wxWHITE);
 	DeleteHeading = new wxStaticText(DeleteArea, wxID_ANY, "Delete Item",
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
@@ -321,28 +334,98 @@ void MainFrame::CreateOptions()
 
 	//This will allow the user to update existing stock
 	//-----------------------------------------------------------------------------------------------------
-	UpdateArea = new wxPanel(ActiveArea, wxID_ANY, wxPoint(230, 250), wxSize(200, 200));
+	UpdateArea = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(230, 250), wxSize(200, 200));
 	UpdateArea->SetBackgroundColour(*wxWHITE);
 	UpdateHeading = new wxStaticText(UpdateArea, wxID_ANY, "Update Item",
 		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 	UpdateHeading->SetFont(SectionHeadingFont);
 
-	UpdateIDInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
+	static wxTextCtrl* UpdateIDInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
 	UpdateIDInput->SetBackgroundColour(*wxBLUE);
 	UpdateIDLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
-	UpdateItemInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
+	static wxTextCtrl* UpdateItemInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
 	UpdateItemInput->SetBackgroundColour(*wxBLUE);
 	UpdateItemLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Name",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
-	UpdateQuantityInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
+	static wxTextCtrl* UpdateQuantityInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
 	UpdateQuantityInput->SetBackgroundColour(*wxBLUE);
 	UpdateQuantityLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	UpdateButton = new wxButton(UpdateArea, wxID_ANY, "Update", wxPoint(75, 170), wxSize(50, 25));
 	UpdateButton->SetBackgroundColour(*wxBLUE);
+	UpdateButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+
+		//Establishes a connection with the MySQL Database
+		//-----------------------------------------------------------------------------------------------------
+		const std::string server = "tcp://127.0.0.1:3306";
+		const std::string username = "root";
+		const std::string password = "";
+
+		sql::Driver* driver;
+		sql::Connection* con;
+		sql::PreparedStatement* pstmt;
+		sql::ResultSet* result;
+
+		try
+		{
+			driver = get_driver_instance();
+			con = driver->connect(server, username, password);
+		}
+		catch (sql::SQLException e)
+		{
+			//cout << "Could not connect to server. Error message: " << e.what() << endl;
+			system("pause");
+			exit(1);
+		}
+
+		con->setSchema("itemdatabase");
+		//-----------------------------------------------------------------------------------------------------
+
+		//Grab Values
+		//---------------------------------------------------------------------
+		wxString EnteredUpdateID = UpdateIDInput->GetValue();
+		int EnteredUpdateQuantity = wxAtoi(UpdateQuantityInput->GetValue());
+		wxString EnteredUpdateItem = UpdateItemInput->GetValue();
+		//---------------------------------------------------------------------
+
+		bool IDFound = false;
+
+		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
+		pstmt->setString(1, EnteredUpdateID.ToStdString());
+		result = pstmt->executeQuery();
+
+		while (result->next())
+		{
+			string CheckID = result->getString(3).c_str();
+			if (CheckID == EnteredUpdateID)
+			{
+				IDFound = true;
+				break;
+			}
+		}
+
+		if ((EnteredUpdateQuantity >= 0) && (IDFound == true))
+		{
+			pstmt = con->prepareStatement("UPDATE itemtable SET ItemName = ?, ItemQuantity = ? WHERE ItemID = ?");
+			pstmt->setString(1, EnteredUpdateItem.ToStdString());
+			pstmt->setInt(2, EnteredUpdateQuantity);
+			pstmt->setString(3, EnteredUpdateID.ToStdString());
+			pstmt->executeQuery();
+		}
+
+		delete pstmt;
+		delete con;
+		delete result;
+
+		//Resets the Treeview Table to empty for refilling
+		basicListView->DeleteAllItems();
+
+		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(TreeviewTable, basicListView);
+		});
 	//-----------------------------------------------------------------------------------------------------
 }

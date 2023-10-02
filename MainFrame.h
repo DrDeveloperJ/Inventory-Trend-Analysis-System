@@ -15,6 +15,8 @@ private:
 	wxPanel* InteractiveArea;
 	wxPanel* NavigationBar;
 	wxButton* StockManage;
+	wxButton* SellSystem;
+	wxButton* AnalysisPage;
 	wxPanel* ActiveArea;
 
 	wxPanel* CreateArea;
