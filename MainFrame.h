@@ -48,7 +48,13 @@ private:
 
 	wxPanel* TreeviewTable;
 	static wxListView* basicListView;
-	//static wxStaticText* DisplayItemName;
-	//static wxStaticText* DisplayItemQuantity;
-	//static wxStaticText* DisplayItemID;
+	static wxListView* sellBasicListView;
+
+	wxPanel* SellArea;
+	wxStaticText* SellHeading;
+	wxTextCtrl* SellIDInput;
+	wxStaticText* SellIDLabel;
+	wxTextCtrl* SellQuantityInput;
+	wxStaticText* SellQuantityLabel;
+	wxButton* SellButton;
 };

@@ -16,6 +16,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 }
 
 wxListView* MainFrame::basicListView = nullptr;
+wxListView* MainFrame::sellBasicListView = nullptr;
 
 //Loops through the database and inserts all the current data into the treeview table
 //-----------------------------------------------------------------------------------------------------
@@ -106,7 +107,7 @@ void MainFrame::CreateOptions()
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
 	NavigationBar->SetBackgroundColour(*wxYELLOW);
 
-	AnalysisPage = new wxButton(NavigationBar, wxID_ANY, "Sell System", wxPoint(25, 20), wxSize(100, 75));
+	AnalysisPage = new wxButton(NavigationBar, wxID_ANY, "Analysis", wxPoint(25, 20), wxSize(100, 75));
 	AnalysisPage->SetBackgroundColour(*wxBLUE);
 	AnalysisPage->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		StockActiveArea->Show(false);
@@ -135,18 +136,23 @@ void MainFrame::CreateOptions()
 		});
 	//-----------------------------------------------------------------------------------------------------
 
+
+	//Stock Management Page
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
 	//This will display all the stock to the user in a user friendly Treeview Table
-	static wxPanel* TreeviewTable = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(400, 450));
+	static wxPanel* TreeviewTable = new wxPanel(StockActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(399, 450));
 	TreeviewTable->SetBackgroundColour(*wxWHITE);
 
-	MainFrame:basicListView = new wxListView(TreeviewTable);
+	basicListView = new wxListView(TreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(399, 450));
 
 	basicListView->AppendColumn("ItemName");
 	basicListView->AppendColumn("ItemQuantity");
 	basicListView->AppendColumn("ItemID");
-	basicListView->SetColumnWidth(0, 80);
-	basicListView->SetColumnWidth(1, 80);
-	basicListView->SetColumnWidth(2, 80);
+	basicListView->SetColumnWidth(0, 133);
+	basicListView->SetColumnWidth(1, 133);
+	basicListView->SetColumnWidth(2, 133);
 
 	//Loops through the database and inserts all the current data into the treeview table
 	StartTreeview(TreeviewTable, basicListView);
@@ -428,4 +434,121 @@ void MainFrame::CreateOptions()
 		StartTreeview(TreeviewTable, basicListView);
 		});
 	//-----------------------------------------------------------------------------------------------------
+
+
+	//Sell System
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
+	//This will display all the stock to the user in a user friendly Treeview Table
+	//-----------------------------------------------------------------------------------------------------
+	static wxPanel* SellTreeviewTable = new wxPanel(SellActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(399, 450));
+	SellTreeviewTable->SetBackgroundColour(*wxWHITE);
+
+	sellBasicListView = new wxListView(SellTreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(399, 450));
+
+	sellBasicListView->AppendColumn("ItemName");
+	sellBasicListView->AppendColumn("ItemQuantity");
+	sellBasicListView->AppendColumn("ItemID");
+	sellBasicListView->SetColumnWidth(0, 133);
+	sellBasicListView->SetColumnWidth(1, 133);
+	sellBasicListView->SetColumnWidth(2, 133);
+
+	//Loops through the database and inserts all the current data into the treeview table
+	StartTreeview(TreeviewTable, sellBasicListView);
+	//-----------------------------------------------------------------------------------------------------
+
+	//This will allow the user to Sell stock
+	//-----------------------------------------------------------------------------------------------------
+	SellArea = new wxPanel(SellActiveArea, wxID_ANY, wxPoint(125, 120), wxSize(200, 200));
+	SellArea->SetBackgroundColour(*wxWHITE);
+	SellHeading = new wxStaticText(SellArea, wxID_ANY, "Sell Item",
+		wxPoint(50, 5), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+	SellHeading->SetFont(SectionHeadingFont);
+
+	static wxTextCtrl* SellIDInput = new wxTextCtrl(SellArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
+	SellIDInput->SetBackgroundColour(*wxBLUE);
+	SellIDLabel = new wxStaticText(SellArea, wxID_ANY, "Item ID",
+		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	static wxTextCtrl* SellQuantityInput = new wxTextCtrl(SellArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
+	SellQuantityInput->SetBackgroundColour(*wxBLUE);
+	SellQuantityLabel = new wxStaticText(SellArea, wxID_ANY, "Item Quantity",
+		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	SellButton = new wxButton(SellArea, wxID_ANY, "Sell", wxPoint(75, 170), wxSize(50, 25));
+	SellButton->SetBackgroundColour(*wxBLUE);
+	SellButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+
+		//Establishes a connection with the MySQL Database
+		//-----------------------------------------------------------------------------------------------------
+		const std::string server = "tcp://127.0.0.1:3306";
+		const std::string username = "root";
+		const std::string password = "";
+
+		sql::Driver* driver;
+		sql::Connection* con;
+		sql::PreparedStatement* pstmt;
+		sql::ResultSet* result;
+
+		try
+		{
+			driver = get_driver_instance();
+			con = driver->connect(server, username, password);
+		}
+		catch (sql::SQLException e)
+		{
+			//cout << "Could not connect to server. Error message: " << e.what() << endl;
+			system("pause");
+			exit(1);
+		}
+
+		con->setSchema("itemdatabase");
+		//-----------------------------------------------------------------------------------------------------
+
+		//Grab Values
+		//---------------------------------------------------------------------
+		wxString EnteredSellID = SellIDInput->GetValue();
+		int EnteredSellQuantity = wxAtoi(SellQuantityInput->GetValue());
+		//---------------------------------------------------------------------
+
+		bool IDFound = false;
+
+		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
+		pstmt->setString(1, EnteredSellID.ToStdString());
+		result = pstmt->executeQuery();
+
+		while (result->next())
+		{
+			string CheckID = result->getString(3).c_str();
+			if (CheckID == EnteredSellID)
+			{
+				IDFound = true;
+				break;
+			}
+		}
+
+		if ((EnteredSellQuantity >= 0) && (IDFound == true))
+		{
+			pstmt = con->prepareStatement("UPDATE itemtable SET ItemQuantity = ? WHERE ItemID = ?");
+			pstmt->setInt(2, EnteredSellQuantity);
+			pstmt->setString(3, EnteredSellID.ToStdString());
+			pstmt->executeQuery();
+		}
+
+		delete pstmt;
+		delete con;
+		delete result;
+
+		//Resets the Treeview Table to empty for refilling
+		basicListView->DeleteAllItems();
+
+		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(TreeviewTable, basicListView);
+		});
+	//-----------------------------------------------------------------------------------------------------
+
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
 }
