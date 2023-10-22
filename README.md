@@ -18,6 +18,11 @@ $(wxLibOrDllDir);%(AdditionalLibraryDirectories);C:\Program Files\MySQL\MySQL Se
 Linker >> Input >> "Additional Dependencies" :
 kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;shell32.lib;shlwapi.lib;ole32.lib;oleaut32.lib;uuid.lib;advapi32.lib;version.lib;comctl32.lib;rpcrt4.lib;ws2_32.lib;wininet.lib;winmm.lib;%(AdditionalDependencies);mysqlcppconn.lib
 
+
+For Unit Test Properties add this as well :
+C/C++ >> Preprocessor >> "Preprocessor Definitions" :
+_CRT_SECURE_NO_WARNINGS
+
 ---------------------------------------------------------------------------------
 
 Uses wxWidgets and MYSqlServer

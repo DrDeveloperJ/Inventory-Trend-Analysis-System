@@ -15,6 +15,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 	CreateOptions();
 }
 
+static std::string GlobalSQLPassword;
+
 wxListView* MainFrame::basicListView = nullptr;
 wxListView* MainFrame::sellBasicListView = nullptr;
 
@@ -26,9 +28,9 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
-	const std::string server = "tcp://127.0.0.1:3306";
-	const std::string username = "root";
-	const std::string password = "";
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
 
 	sql::Driver* driver;
 	sql::Connection* con;
@@ -74,6 +76,7 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 
 void MainFrame::CreateOptions()
 {
+
 	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
 	MainPanel = new wxPanel(this);
@@ -90,9 +93,13 @@ void MainFrame::CreateOptions()
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
 	InteractiveArea->SetBackgroundColour(*wxGREEN);
 
+	static wxPanel* OwnerUnlockArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(1000, 500));
+	OwnerUnlockArea->SetBackgroundColour(*wxBLUE);
+
 	//StockActive is the Stock Management page
 	static wxPanel* StockActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
 	StockActiveArea->SetBackgroundColour(*wxGREEN);
+	StockActiveArea->Show(false);
 	//AnalysisActiveArea is the Analysis page
 	static wxPanel* AnalysisActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
 	AnalysisActiveArea->SetBackgroundColour(*wxGREEN);
@@ -106,6 +113,7 @@ void MainFrame::CreateOptions()
 	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
 	NavigationBar->SetBackgroundColour(*wxYELLOW);
+	NavigationBar->Show(false);
 
 	AnalysisPage = new wxButton(NavigationBar, wxID_ANY, "Analysis", wxPoint(25, 20), wxSize(100, 75));
 	AnalysisPage->SetBackgroundColour(*wxBLUE);
@@ -136,7 +144,6 @@ void MainFrame::CreateOptions()
 		});
 	//-----------------------------------------------------------------------------------------------------
 
-
 	//Stock Management Page
 	//--------------------------------------------------------------------------------------------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
@@ -155,7 +162,7 @@ void MainFrame::CreateOptions()
 	basicListView->SetColumnWidth(2, 133);
 
 	//Loops through the database and inserts all the current data into the treeview table
-	StartTreeview(TreeviewTable, basicListView);
+	//StartTreeview(TreeviewTable, basicListView);
 
 	//This will allow the user to create a new item to add to the stock
 	//-----------------------------------------------------------------------------------------------------
@@ -183,69 +190,16 @@ void MainFrame::CreateOptions()
 
 	createButton = new wxButton(CreateArea, wxID_ANY, "Create", wxPoint(75, 170), wxSize(50, 25));
 	createButton->SetBackgroundColour(*wxBLUE);
-	createButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
-
-		//Establishes a connection with the MySQL Database
-		//-----------------------------------------------------------------------------------------------------
-		const std::string server = "tcp://127.0.0.1:3306";
-		const std::string username = "root";
-		const std::string password = "";
-
-		sql::Driver* driver;
-		sql::Connection* con;
-		sql::PreparedStatement* pstmt;
-		sql::ResultSet* result;
-
-		try
-		{
-			driver = get_driver_instance();
-			con = driver->connect(server, username, password);
-		}
-		catch (sql::SQLException e)
-		{
-			//cout << "Could not connect to server. Error message: " << e.what() << endl;
-			system("pause");
-			exit(1);
-		}
-
-		con->setSchema("itemdatabase");
-		//-----------------------------------------------------------------------------------------------------
+	createButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 
 		//Grab Values
-		//---------------------------------------------------------------------
-		wxString EnteredCreateID = CreateIDInput->GetValue();
+	    //---------------------------------------------------------------------
+		string EnteredCreateID = (CreateIDInput->GetValue()).ToStdString();
 		int EnteredCreateQuantity = wxAtoi(CreateQuantityInput->GetValue());
-		wxString EnteredCreateItem = CreateItemInput->GetValue();
+		string EnteredCreateItem = (CreateItemInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
-		bool UniqueID = true;
-
-		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
-		pstmt->setString(1, EnteredCreateID.ToStdString());
-		result = pstmt->executeQuery();
-
-		while (result->next())
-		{
-			string CheckID = result->getString(3).c_str();
-			if (CheckID == EnteredCreateID)
-			{
-				UniqueID = false;
-				break;
-			}
-		}
-
-		if ((EnteredCreateQuantity >= 0) && (UniqueID == true))
-		{
-			pstmt = con->prepareStatement("INSERT INTO itemtable(ItemName, ItemQuantity, ItemID) VALUES(?,?,?)");
-			pstmt->setString(1, EnteredCreateItem.ToStdString());
-			pstmt->setInt(2, EnteredCreateQuantity);
-			pstmt->setString(3, EnteredCreateID.ToStdString());
-			pstmt->executeQuery();
-		}
-
-		delete pstmt;
-		delete con;
-		delete result;
+		CreateButtonOnClick(EnteredCreateID, EnteredCreateQuantity, EnteredCreateItem, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
 		basicListView->DeleteAllItems();
@@ -253,7 +207,6 @@ void MainFrame::CreateOptions()
 		//Loops through the database and inserts all the current data into the treeview table
 		StartTreeview(TreeviewTable, basicListView);
 		});
-	//-----------------------------------------------------------------------------------------------------
 
 	//This will allow the user to delete stock
 	//-----------------------------------------------------------------------------------------------------
@@ -270,65 +223,14 @@ void MainFrame::CreateOptions()
 
 	DeleteButton = new wxButton(DeleteArea, wxID_ANY, "Delete", wxPoint(75, 140), wxSize(50, 25));
 	DeleteButton->SetBackgroundColour(*wxBLUE);
-	DeleteButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
-
-		//Establishes a connection with the MySQL Database
-		//-----------------------------------------------------------------------------------------------------
-		const std::string server = "tcp://127.0.0.1:3306";
-		const std::string username = "root";
-		const std::string password = "";
-
-		sql::Driver* driver;
-		sql::Connection* con;
-		sql::PreparedStatement* pstmt;
-		sql::ResultSet* result;
-
-		try
-		{
-			driver = get_driver_instance();
-			con = driver->connect(server, username, password);
-		}
-		catch (sql::SQLException e)
-		{
-			//cout << "Could not connect to server. Error message: " << e.what() << endl;
-			system("pause");
-			exit(1);
-		}
-
-		con->setSchema("itemdatabase");
-		//-----------------------------------------------------------------------------------------------------
+	DeleteButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 
 		//Grab Value
 		//---------------------------------------------------------------------
-		wxString EnteredDeleteID = DeleteInput->GetValue();
+		string EnteredDeleteID = (DeleteInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
-		bool IDFound = false;
-
-		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
-		pstmt->setString(1, EnteredDeleteID.ToStdString());
-		result = pstmt->executeQuery();
-
-		while (result->next())
-		{
-			string CheckID = result->getString(3).c_str();
-			if (CheckID == EnteredDeleteID)
-			{
-				IDFound = true;
-				break;
-			}
-		}
-
-		if (IDFound == true)
-		{
-			pstmt = con->prepareStatement("DELETE FROM itemtable WHERE ItemID = ?");
-			pstmt->setString(1, EnteredDeleteID.ToStdString());
-			pstmt->executeQuery();
-		}
-
-		delete pstmt;
-		delete con;
-		delete result;
+		DeleteButtonOnClick(EnteredDeleteID, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
 		basicListView->DeleteAllItems();
@@ -365,67 +267,14 @@ void MainFrame::CreateOptions()
 	UpdateButton->SetBackgroundColour(*wxBLUE);
 	UpdateButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
-		//Establishes a connection with the MySQL Database
-		//-----------------------------------------------------------------------------------------------------
-		const std::string server = "tcp://127.0.0.1:3306";
-		const std::string username = "root";
-		const std::string password = "";
-
-		sql::Driver* driver;
-		sql::Connection* con;
-		sql::PreparedStatement* pstmt;
-		sql::ResultSet* result;
-
-		try
-		{
-			driver = get_driver_instance();
-			con = driver->connect(server, username, password);
-		}
-		catch (sql::SQLException e)
-		{
-			//cout << "Could not connect to server. Error message: " << e.what() << endl;
-			system("pause");
-			exit(1);
-		}
-
-		con->setSchema("itemdatabase");
-		//-----------------------------------------------------------------------------------------------------
-
 		//Grab Values
 		//---------------------------------------------------------------------
-		wxString EnteredUpdateID = UpdateIDInput->GetValue();
+		string EnteredUpdateID = (UpdateIDInput->GetValue()).ToStdString();
 		int EnteredUpdateQuantity = wxAtoi(UpdateQuantityInput->GetValue());
-		wxString EnteredUpdateItem = UpdateItemInput->GetValue();
+		string EnteredUpdateItem = (UpdateItemInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
-		bool IDFound = false;
-
-		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
-		pstmt->setString(1, EnteredUpdateID.ToStdString());
-		result = pstmt->executeQuery();
-
-		while (result->next())
-		{
-			string CheckID = result->getString(3).c_str();
-			if (CheckID == EnteredUpdateID)
-			{
-				IDFound = true;
-				break;
-			}
-		}
-
-		if ((EnteredUpdateQuantity >= 0) && (IDFound == true))
-		{
-			pstmt = con->prepareStatement("UPDATE itemtable SET ItemName = ?, ItemQuantity = ? WHERE ItemID = ?");
-			pstmt->setString(1, EnteredUpdateItem.ToStdString());
-			pstmt->setInt(2, EnteredUpdateQuantity);
-			pstmt->setString(3, EnteredUpdateID.ToStdString());
-			pstmt->executeQuery();
-		}
-
-		delete pstmt;
-		delete con;
-		delete result;
+		UpdateButtonOnClick(EnteredUpdateID, EnteredUpdateQuantity, EnteredUpdateItem, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
 		basicListView->DeleteAllItems();
@@ -455,7 +304,7 @@ void MainFrame::CreateOptions()
 	sellBasicListView->SetColumnWidth(2, 133);
 
 	//Loops through the database and inserts all the current data into the treeview table
-	StartTreeview(TreeviewTable, sellBasicListView);
+	//StartTreeview(SellTreeviewTable, sellBasicListView);
 	//-----------------------------------------------------------------------------------------------------
 
 	//This will allow the user to Sell stock
@@ -480,70 +329,20 @@ void MainFrame::CreateOptions()
 	SellButton->SetBackgroundColour(*wxBLUE);
 	SellButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
-		//Establishes a connection with the MySQL Database
-		//-----------------------------------------------------------------------------------------------------
-		const std::string server = "tcp://127.0.0.1:3306";
-		const std::string username = "root";
-		const std::string password = "";
-
-		sql::Driver* driver;
-		sql::Connection* con;
-		sql::PreparedStatement* pstmt;
-		sql::ResultSet* result;
-
-		try
-		{
-			driver = get_driver_instance();
-			con = driver->connect(server, username, password);
-		}
-		catch (sql::SQLException e)
-		{
-			//cout << "Could not connect to server. Error message: " << e.what() << endl;
-			system("pause");
-			exit(1);
-		}
-
-		con->setSchema("itemdatabase");
-		//-----------------------------------------------------------------------------------------------------
-
 		//Grab Values
 		//---------------------------------------------------------------------
-		wxString EnteredSellID = SellIDInput->GetValue();
+		std::string EnteredSellID = (SellIDInput->GetValue()).ToStdString();
 		int EnteredSellQuantity = wxAtoi(SellQuantityInput->GetValue());
 		//---------------------------------------------------------------------
 
-		bool IDFound = false;
-
-		pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
-		pstmt->setString(1, EnteredSellID.ToStdString());
-		result = pstmt->executeQuery();
-
-		while (result->next())
-		{
-			string CheckID = result->getString(3).c_str();
-			if (CheckID == EnteredSellID)
-			{
-				IDFound = true;
-				break;
-			}
-		}
-
-		if ((EnteredSellQuantity >= 0) && (IDFound == true))
-		{
-			pstmt = con->prepareStatement("UPDATE itemtable SET ItemQuantity = ? WHERE ItemID = ?");
-			pstmt->setInt(2, EnteredSellQuantity);
-			pstmt->setString(3, EnteredSellID.ToStdString());
-			pstmt->executeQuery();
-		}
-
-		delete pstmt;
-		delete con;
-		delete result;
+		SellButtonOnClick(EnteredSellID, EnteredSellQuantity, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
+		sellBasicListView->DeleteAllItems();
 		basicListView->DeleteAllItems();
 
 		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(SellTreeviewTable, sellBasicListView);
 		StartTreeview(TreeviewTable, basicListView);
 		});
 	//-----------------------------------------------------------------------------------------------------
@@ -551,4 +350,67 @@ void MainFrame::CreateOptions()
 	//--------------------------------------------------------------------------------------------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
 
+	//Owner Unlock Page
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+	wxFont OwnerUnlockSectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
+	OwnerUnlockDetailsArea = new wxPanel(OwnerUnlockArea, wxID_ANY, wxPoint(400, 125), wxSize(200, 200));
+	OwnerUnlockDetailsArea->SetBackgroundColour(*wxWHITE);
+	OwnerUnlockHeading = new wxStaticText(OwnerUnlockDetailsArea, wxID_ANY, "Shop Owner Unlock",
+		wxPoint(5, 5), wxSize(100, 50), wxALIGN_CENTER_HORIZONTAL);
+	OwnerUnlockHeading->SetFont(OwnerUnlockSectionHeadingFont);
+
+	static wxTextCtrl* SQLPasswordInput = new wxTextCtrl(OwnerUnlockDetailsArea, wxID_ANY, "", wxPoint(5, 90), wxSize(190, 20));
+	SQLPasswordInput->SetBackgroundColour(*wxBLUE);
+	SQLPasswordLabel = new wxStaticText(OwnerUnlockDetailsArea, wxID_ANY, "SQL Password",
+		wxPoint(50, 70), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	OwnerUnlockButton = new wxButton(OwnerUnlockDetailsArea, wxID_ANY, "Unlock", wxPoint(75, 170), wxSize(50, 25));
+	OwnerUnlockButton->SetBackgroundColour(*wxBLUE);
+	OwnerUnlockButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
+
+		//Grab Value
+		//---------------------------------------------------------------------
+		std::string SQLPassword = (SQLPasswordInput->GetValue()).ToStdString();
+		//---------------------------------------------------------------------
+
+		//Establishes a connection with the MySQL Database
+		//-----------------------------------------------------------------------------------------------------
+		const std::string newserver = "tcp://managestock.mysql.database.azure.com:3306";
+		const std::string newusername = "rootConnect";
+		const std::string newpassword = SQLPassword;
+		GlobalSQLPassword = SQLPassword;
+
+		sql::Driver* driver;
+		sql::Connection* con = nullptr;
+
+		try
+		{
+			driver = get_driver_instance();
+			con = driver->connect(newserver, newusername, newpassword);
+		}
+		catch (sql::SQLException e)
+		{
+			//Could not connect to server.
+			delete con;
+			return;
+		}
+
+		delete con;
+		//-----------------------------------------------------------------------------------------------------
+
+		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(TreeviewTable, basicListView);
+		StartTreeview(SellTreeviewTable, sellBasicListView);
+
+		OwnerUnlockArea->Show(false);
+		NavigationBar->Show(true);
+		StockActiveArea->Show(true);
+		});
+
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
 }
+
+
