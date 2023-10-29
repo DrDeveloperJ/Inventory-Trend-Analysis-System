@@ -16,6 +16,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 }
 
 static std::string GlobalSQLPassword;
+static std::string UserLatitude;
+static std::string UserLongitude;
 
 wxListView* MainFrame::basicListView = nullptr;
 wxListView* MainFrame::sellBasicListView = nullptr;
@@ -109,6 +111,11 @@ void MainFrame::CreateOptions()
 	SellActiveArea->SetBackgroundColour(*wxGREEN);
 	SellActiveArea->Show(false);
 
+	static wxPanel* SellTreeviewTable = new wxPanel(SellActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(399, 450));
+	SellTreeviewTable->SetBackgroundColour(*wxWHITE);
+
+	sellBasicListView = new wxListView(SellTreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(399, 450));
+
 	//Navigation Bar for navigating between pages
 	//-----------------------------------------------------------------------------------------------------
 	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
@@ -161,9 +168,6 @@ void MainFrame::CreateOptions()
 	basicListView->SetColumnWidth(1, 133);
 	basicListView->SetColumnWidth(2, 133);
 
-	//Loops through the database and inserts all the current data into the treeview table
-	//StartTreeview(TreeviewTable, basicListView);
-
 	//This will allow the user to create a new item to add to the stock
 	//-----------------------------------------------------------------------------------------------------
 	wxFont SectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
@@ -202,9 +206,11 @@ void MainFrame::CreateOptions()
 		CreateButtonOnClick(EnteredCreateID, EnteredCreateQuantity, EnteredCreateItem, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
+		sellBasicListView->DeleteAllItems();
 		basicListView->DeleteAllItems();
 
 		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(SellTreeviewTable, sellBasicListView);
 		StartTreeview(TreeviewTable, basicListView);
 		});
 
@@ -233,9 +239,11 @@ void MainFrame::CreateOptions()
 		DeleteButtonOnClick(EnteredDeleteID, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
+		sellBasicListView->DeleteAllItems();
 		basicListView->DeleteAllItems();
 
 		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(SellTreeviewTable, sellBasicListView);
 		StartTreeview(TreeviewTable, basicListView);
 		});
 	//-----------------------------------------------------------------------------------------------------
@@ -277,9 +285,11 @@ void MainFrame::CreateOptions()
 		UpdateButtonOnClick(EnteredUpdateID, EnteredUpdateQuantity, EnteredUpdateItem, GlobalSQLPassword);
 
 		//Resets the Treeview Table to empty for refilling
+		sellBasicListView->DeleteAllItems();
 		basicListView->DeleteAllItems();
 
 		//Loops through the database and inserts all the current data into the treeview table
+		StartTreeview(SellTreeviewTable, sellBasicListView);
 		StartTreeview(TreeviewTable, basicListView);
 		});
 	//-----------------------------------------------------------------------------------------------------
@@ -291,10 +301,6 @@ void MainFrame::CreateOptions()
 
 	//This will display all the stock to the user in a user friendly Treeview Table
 	//-----------------------------------------------------------------------------------------------------
-	static wxPanel* SellTreeviewTable = new wxPanel(SellActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(399, 450));
-	SellTreeviewTable->SetBackgroundColour(*wxWHITE);
-
-	sellBasicListView = new wxListView(SellTreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(399, 450));
 
 	sellBasicListView->AppendColumn("ItemName");
 	sellBasicListView->AppendColumn("ItemQuantity");
@@ -302,10 +308,6 @@ void MainFrame::CreateOptions()
 	sellBasicListView->SetColumnWidth(0, 133);
 	sellBasicListView->SetColumnWidth(1, 133);
 	sellBasicListView->SetColumnWidth(2, 133);
-
-	//Loops through the database and inserts all the current data into the treeview table
-	//StartTreeview(SellTreeviewTable, sellBasicListView);
-	//-----------------------------------------------------------------------------------------------------
 
 	//This will allow the user to Sell stock
 	//-----------------------------------------------------------------------------------------------------
@@ -335,7 +337,7 @@ void MainFrame::CreateOptions()
 		int EnteredSellQuantity = wxAtoi(SellQuantityInput->GetValue());
 		//---------------------------------------------------------------------
 
-		SellButtonOnClick(EnteredSellID, EnteredSellQuantity, GlobalSQLPassword);
+		SellButtonOnClick(EnteredSellID, EnteredSellQuantity, GlobalSQLPassword, UserLatitude, UserLongitude);
 
 		//Resets the Treeview Table to empty for refilling
 		sellBasicListView->DeleteAllItems();
@@ -403,9 +405,44 @@ void MainFrame::CreateOptions()
 		StartTreeview(TreeviewTable, basicListView);
 		StartTreeview(SellTreeviewTable, sellBasicListView);
 
+		//Unlocks the Program
 		OwnerUnlockArea->Show(false);
 		NavigationBar->Show(true);
 		StockActiveArea->Show(true);
+
+		//Grabs the User's Latitude and Longitude using a HTTP request to the ipapi API
+		//-----------------------------------------------------------------------------------------------------
+		CURL* curl = curl_easy_init();
+		CURLcode ipapiResult;
+		std::string ipapiApiKey = getenv("ipapiAPIKey");
+
+		std::string ipapiurl = "https://ipapi.co/json/?key=" + ipapiApiKey;
+
+		if (curl)
+		{
+			curl_easy_setopt(curl, CURLOPT_URL, ipapiurl.c_str());
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+			std::string response;
+
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+
+			ipapiResult = curl_easy_perform(curl);
+			if (ipapiResult != CURLE_OK)
+			{
+				std::string error_message = "Connection to ipapi failed.";
+				throw std::runtime_error(error_message);
+			}
+
+			nlohmann::json j = nlohmann::json::parse(response);
+			UserLatitude = j["latitude"].dump();
+			UserLongitude = j["longitude"].dump();
+
+			curl_easy_cleanup(curl);
+		}
+		//-----------------------------------------------------------------------------------------------------
+
 		});
 
 	//--------------------------------------------------------------------------------------------------------------------------

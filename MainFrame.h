@@ -7,6 +7,9 @@
 #include "stdafx.h"
 #include <cstdlib>
 #include <wx/string.h>
+#include <nlohmann/json.hpp>
+
+#include <curl/curl.h>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
@@ -20,7 +23,7 @@ public:
 	inline static void CreateButtonOnClick(string& EnteredCreateID, int& EnteredCreateQuantity, string& EnteredCreateItem, string& GlobalSQLPassword);
 	inline static void DeleteButtonOnClick(string& EnteredDeleteID, string& GlobalSQLPassword);
 	inline static void UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword);
-	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword);
+	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude);
 
 private:
 	void CreateOptions();
@@ -134,6 +137,10 @@ inline void MainFrame::CreateButtonOnClick(string& EnteredCreateID, int& Entered
 		pstmt->setInt(2, EnteredCreateQuantity);
 		pstmt->setString(3, EnteredCreateID);
 		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("INSERT INTO weatherdata(ItemID) VALUES(?)");
+		pstmt->setString(1, EnteredCreateID);
+		pstmt->executeQuery();
 	}
 
 	delete pstmt;
@@ -189,6 +196,10 @@ inline void MainFrame::DeleteButtonOnClick(string& EnteredDeleteID, string& Glob
 	if (IDFound == true)
 	{
 		pstmt = con->prepareStatement("DELETE FROM itemtable WHERE ItemID = ?");
+		pstmt->setString(1, EnteredDeleteID);
+		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("DELETE FROM weatherdata WHERE ItemID = ?");
 		pstmt->setString(1, EnteredDeleteID);
 		pstmt->executeQuery();
 	}
@@ -266,10 +277,18 @@ inline void MainFrame::UpdateButtonOnClick(string& EnteredUpdateID, int& Entered
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------
 
-inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword)
+static size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)
 {
+	std::string* response = reinterpret_cast<std::string*>(userdata);
+	response->append(ptr, size * nmemb);
+	return size * nmemb;
+}
+
+inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude)
+{
+
 	//Establishes a connection with the MySQL Database
-		//-----------------------------------------------------------------------------------------------------
+	//-----------------------------------------------------------------------------------------------------
 	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
 	const std::string username = "rootConnect";
 	const std::string password = GlobalSQLPassword;
@@ -303,33 +322,98 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 	while (result->next())
 	{
 		string CheckID = result->getString(3).c_str();
-		int FoundQuantity = result->getInt("ItemQuantity");
 		if (CheckID == EnteredSellID)
 		{
 			IDFound = true;
-			int NewQuantity = FoundQuantity - EnteredSellQuantity;
 
 			if ((EnteredSellQuantity >= 0) && (IDFound == true))
 			{
-				pstmt = con->prepareStatement("UPDATE itemtable SET ItemQuantity = ? WHERE ItemID = ?");
-				pstmt->setInt(1, NewQuantity);
+
+				pstmt = con->prepareStatement("UPDATE itemtable SET ItemQuantity = ItemQuantity - ? WHERE ItemID = ?");
+				pstmt->setInt(1, EnteredSellQuantity);
 				pstmt->setString(2, EnteredSellID);
 				pstmt->executeQuery();
+
+				CURL* curl = curl_easy_init();
+
+				std::string APIKey = std::getenv("OpenWeatherAPIKey"); //OpenWeather API KEY STORED IN ENVIRONMENT VARIABLE FOR SECURITY REASONS
+
+				CURLcode OpenWeatherResult;
+				std::string openweatherurl = "https://api.openweathermap.org/data/2.5/weather?lat=" + Latitude + "&lon=" + Longitude + "&appid=" + APIKey;
+
+
+				if (curl)
+				{
+					curl_easy_setopt(curl, CURLOPT_URL, openweatherurl.c_str());
+
+					std::string wresponse;
+
+					curl_easy_setopt(curl, CURLOPT_WRITEDATA, &wresponse);
+					curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+
+					OpenWeatherResult = curl_easy_perform(curl);
+
+					nlohmann::json root = nlohmann::json::parse(wresponse);
+					std::string Weather = root["weather"][0]["main"].get<std::string>();
+
+					curl_easy_cleanup(curl);
+
+					if (Weather == "Clouds")
+					{
+						//pstmt = con->prepareStatement("CALL SELL_SYSTEM_UPDATE(?, ?, ?)");
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Clouds = Clouds + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Clear")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Clear = Clear + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Atmosphere")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Atmosphere = Atmosphere + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Snow")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Snow = Snow + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Rain")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Rain = Rain + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Drizzle")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Drizzle = Drizzle + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+					else if (Weather == "Thunderstorm")
+					{
+						pstmt = con->prepareStatement("UPDATE weatherdata SET Thunderstorm = Thunderstorm + ? WHERE ItemID = ?");
+						pstmt->setInt(1, EnteredSellQuantity);
+						pstmt->setString(2, EnteredSellID);
+						pstmt->execute();
+					}
+				}
 			}
 
 			break;
 		}
 	}
-
-	/*
-	if ((EnteredSellQuantity >= 0) && (IDFound == true))
-	{
-		pstmt = con->prepareStatement("UPDATE itemtable SET ItemQuantity = ? WHERE ItemID = ?");
-		pstmt->setInt(2, NewQuantity);
-		pstmt->setString(3, EnteredSellID);
-		pstmt->executeQuery();
-	}
-	*/
 
 	delete pstmt;
 	delete con;
