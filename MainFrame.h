@@ -8,6 +8,10 @@
 #include <cstdlib>
 #include <wx/string.h>
 #include <nlohmann/json.hpp>
+#include "UpdateTimeData.h"
+#include <ctime>
+#include <string>
+#include <sstream>
 
 #include <curl/curl.h>
 
@@ -141,6 +145,10 @@ inline void MainFrame::CreateButtonOnClick(string& EnteredCreateID, int& Entered
 		pstmt = con->prepareStatement("INSERT INTO weatherdata(ItemID) VALUES(?)");
 		pstmt->setString(1, EnteredCreateID);
 		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("INSERT INTO timedata(ItemID) VALUES(?)");
+		pstmt->setString(1, EnteredCreateID);
+		pstmt->executeQuery();
 	}
 
 	delete pstmt;
@@ -202,14 +210,16 @@ inline void MainFrame::DeleteButtonOnClick(string& EnteredDeleteID, string& Glob
 		pstmt = con->prepareStatement("DELETE FROM weatherdata WHERE ItemID = ?");
 		pstmt->setString(1, EnteredDeleteID);
 		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("DELETE FROM timedata WHERE ItemID = ?");
+		pstmt->setString(1, EnteredDeleteID);
+		pstmt->executeQuery();
 	}
 
 	delete pstmt;
 	delete con;
 	delete result;
 }
-
-
 
 inline void MainFrame::UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword)
 {
@@ -334,6 +344,7 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 				pstmt->setString(2, EnteredSellID);
 				pstmt->executeQuery();
 
+				//Sends a HTTP Request to OpenWeatherAPI to grab current weather when the sell button is pressed
 				CURL* curl = curl_easy_init();
 
 				std::string APIKey = std::getenv("OpenWeatherAPIKey"); //OpenWeather API KEY STORED IN ENVIRONMENT VARIABLE FOR SECURITY REASONS
@@ -353,14 +364,15 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 
 					OpenWeatherResult = curl_easy_perform(curl);
 
+					//Parse the result for the Weather
 					nlohmann::json root = nlohmann::json::parse(wresponse);
 					std::string Weather = root["weather"][0]["main"].get<std::string>();
 
 					curl_easy_cleanup(curl);
 
+					//Comparison made to determine what the weather is and update the weather table accordingly
 					if (Weather == "Clouds")
 					{
-						//pstmt = con->prepareStatement("CALL SELL_SYSTEM_UPDATE(?, ?, ?)");
 						pstmt = con->prepareStatement("UPDATE weatherdata SET Clouds = Clouds + ? WHERE ItemID = ?");
 						pstmt->setInt(1, EnteredSellQuantity);
 						pstmt->setString(2, EnteredSellID);
@@ -408,6 +420,15 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 						pstmt->setString(2, EnteredSellID);
 						pstmt->execute();
 					}
+
+					//Update the time database
+					std::tm* timeinfo;
+					std::time_t rawtime;
+					std::time(&rawtime);
+					timeinfo = std::localtime(&rawtime);
+					int hour = timeinfo->tm_hour;
+
+					UpdateTimeDB(hour, pstmt, con, EnteredSellQuantity, EnteredSellID);
 				}
 			}
 

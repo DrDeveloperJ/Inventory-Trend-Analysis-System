@@ -180,6 +180,55 @@ int CheckWeatherDatabase(string CheckID, string Weather)
 	}
 }
 
+int CheckTimeDatabase(string CheckID, int hour)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("SELECT * FROM timedata WHERE ItemID = ?");
+	pstmt->setString(1, CheckID);
+	result = pstmt->executeQuery();
+
+	while (result->next())
+	{
+		string ResultID = result->getString("ItemID").c_str();
+		int ResultInt = result->getInt(std::to_string(hour));
+		if (ResultID == CheckID)
+		{
+
+			delete pstmt;
+			delete con;
+			delete result;
+
+			return ResultInt;
+			break;
+		}
+	}
+}
+
 void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, string TestItemInput)
 {
 	//Establishes a connection with the MySQL Database
@@ -218,6 +267,10 @@ void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, 
 		pstmt = con->prepareStatement("INSERT INTO weatherdata(ItemID, Clouds, Clear, Atmosphere, Snow, Rain, Drizzle, Thunderstorm) VALUES(?, 0, 0, 0, 0, 0, 0, 0)");
 		pstmt->setString(1, TestIDInput);
 		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("INSERT INTO timedata(ItemID) VALUES(?)");
+		pstmt->setString(1, TestIDInput);
+		pstmt->executeQuery();
 	}
 	if (ChangeState == "UPDATE")
 	{
@@ -234,6 +287,10 @@ void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, 
 		pstmt->executeQuery();
 
 		pstmt = con->prepareStatement("DELETE FROM weatherdata WHERE ItemID = ?");
+		pstmt->setString(1, TestIDInput);
+		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("DELETE FROM timedata WHERE ItemID = ?");
 		pstmt->setString(1, TestIDInput);
 		pstmt->executeQuery();
 	}
@@ -383,6 +440,39 @@ namespace UnitTests
 
 				curl_easy_cleanup(ecurl);
 			}
+			//-----------------------------------------------------------------------------------------------------
+		}
+
+		TEST_METHOD(SellSystemModifiesTimeLogsCorrectly)
+		{
+			std::array<string, 2> LatLong = GrabLatLong();
+			std::string UserLatitude = LatLong[0];
+			std::string UserLongitude = LatLong[1];
+
+			string TestSellIDInput = "T3S701";
+			int TestSellQuantityInput = 8;
+			string TestSellItemInput = "UnitTest0001";
+
+			QuickEditDB("CREATE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
+
+			std::tm* timeinfo;
+			std::time_t rawtime;
+			std::time(&rawtime);
+			timeinfo = std::localtime(&rawtime);
+			int hour = timeinfo->tm_hour;
+
+			int PreTime = CheckTimeDatabase(TestSellIDInput, hour);
+
+			int ToSell = 2;
+
+			MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude);
+
+			int TimeShouldBe = PreTime + ToSell;
+
+			int CheckData = CheckTimeDatabase(TestSellIDInput, hour);
+
+			QuickEditDB("DELETE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
+			Assert::AreEqual(TimeShouldBe, CheckData); //If CheckData is true then the test will pass
 			//-----------------------------------------------------------------------------------------------------
 		}
 	};

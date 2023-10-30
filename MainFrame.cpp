@@ -4,6 +4,9 @@
 #include <fstream>
 #include "stdafx.h"
 #include <cstdlib>
+#include <ctime>
+#include <string>
+#include <sstream>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
