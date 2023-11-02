@@ -12,6 +12,7 @@
 #include <ctime>
 #include <string>
 #include <sstream>
+#include <variant>
 
 #include <curl/curl.h>
 
@@ -28,7 +29,7 @@ public:
 	inline static void DeleteButtonOnClick(string& EnteredDeleteID, string& GlobalSQLPassword);
 	inline static void UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword);
 	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude);
-
+	inline static std::vector<std::variant<int, std::string>> AnalysisButtonOnClick(string& EnteredAnalysisID, string& GlobalSQLPassword);
 private:
 	void CreateOptions();
 
@@ -57,7 +58,6 @@ private:
 	wxTextCtrl* CreateQuantityInput;
 	wxStaticText* CreateQuantityLabel;
 	wxButton* createButton;
-	//void CreateButtonClicked(wxCommandEvent& evt);
 
 	wxPanel* DeleteArea;
 	wxStaticText* DeleteHeading;
@@ -78,6 +78,7 @@ private:
 	wxPanel* TreeviewTable;
 	static wxListView* basicListView;
 	static wxListView* sellBasicListView;
+	static wxListView* analysisBasicListView;
 
 	wxPanel* SellArea;
 	wxStaticText* SellHeading;
@@ -86,6 +87,85 @@ private:
 	wxTextCtrl* SellQuantityInput;
 	wxStaticText* SellQuantityLabel;
 	wxButton* SellButton;
+
+	wxPanel* AnalysisArea;
+	wxStaticText* AnalysisHeading;
+	wxTextCtrl* AnalysisIDInput;
+	wxStaticText* AnalysisIDLabel;
+	wxButton* AnalysisButton;
+
+	wxButton* TimeAnalysisButton;
+	wxButton* WeatherAnalysisButton;
+	wxPanel* WeatherTrendsArea;
+	wxPanel* TimeTrendsArea;
+
+	wxStaticText* CloudsHeading;
+	static wxStaticText* Clouds;
+	wxStaticText* ClearHeading;
+	static wxStaticText* Clear;
+	wxStaticText* AtmosphereHeading;
+	static wxStaticText* Atmosphere;
+	wxStaticText* SnowHeading;
+	static wxStaticText* Snow;
+	wxStaticText* RainHeading;
+	static wxStaticText* Rain;
+	wxStaticText* ThunderstormHeading;
+	static wxStaticText* Thunderstorm;
+	wxStaticText* DrizzleHeading;
+	static wxStaticText* Drizzle;
+
+	static wxStaticText* WeatherCurrentItemHeading;
+
+	wxStaticText* Time00Heading;
+	static wxStaticText* Time00;
+	wxStaticText* Time01Heading;
+	static wxStaticText* Time01;
+	wxStaticText* Time02Heading;
+	static wxStaticText* Time02;
+	wxStaticText* Time03Heading;
+	static wxStaticText* Time03;
+	wxStaticText* Time04Heading;
+	static wxStaticText* Time04;
+	wxStaticText* Time05Heading;
+	static wxStaticText* Time05;
+	wxStaticText* Time06Heading;
+	static wxStaticText* Time06;
+	wxStaticText* Time07Heading;
+	static wxStaticText* Time07;
+	wxStaticText* Time08Heading;
+	static wxStaticText* Time08;
+	wxStaticText* Time09Heading;
+	static wxStaticText* Time09;
+	wxStaticText* Time10Heading;
+	static wxStaticText* Time10;
+	wxStaticText* Time11Heading;
+	static wxStaticText* Time11;
+	wxStaticText* Time12Heading;
+	static wxStaticText* Time12;
+	wxStaticText* Time13Heading;
+	static wxStaticText* Time13;
+	wxStaticText* Time14Heading;
+	static wxStaticText* Time14;
+	wxStaticText* Time15Heading;
+	static wxStaticText* Time15;
+	wxStaticText* Time16Heading;
+	static wxStaticText* Time16;
+	wxStaticText* Time17Heading;
+	static wxStaticText* Time17;
+	wxStaticText* Time18Heading;
+	static wxStaticText* Time18;
+	wxStaticText* Time19Heading;
+	static wxStaticText* Time19;
+	wxStaticText* Time20Heading;
+	static wxStaticText* Time20;
+	wxStaticText* Time21Heading;
+	static wxStaticText* Time21;
+	wxStaticText* Time22Heading;
+	static wxStaticText* Time22;
+	wxStaticText* Time23Heading;
+	static wxStaticText* Time23;
+
+	static wxStaticText* TimeCurrentItemHeading;
 };
 
 // Stock Management Function Definitions
@@ -440,5 +520,101 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 	delete con;
 	delete result;
 }
+// ------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------------
+
+
+//Analysis Page Function Definitions
+// ------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------------
+
+inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnClick(string& EnteredAnalysisID, string& GlobalSQLPassword)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
+	sql::ResultSet* weatherresult = nullptr;
+	sql::ResultSet* timeresult = nullptr;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+	pstmt = con->prepareStatement("SELECT * FROM itemtable WHERE ItemID = ?");
+	pstmt->setString(1, EnteredAnalysisID);
+	result = pstmt->executeQuery();
+
+	std::vector<std::variant<int, std::string>> ReturnedAnalysisData;
+
+	while (result->next())
+	{
+		string CheckID = result->getString(3).c_str();
+		string ItemName = result->getString("ItemName").c_str();
+		if (CheckID == EnteredAnalysisID)
+		{
+			std::vector<std::variant<int, std::string>> ReturnedAnalysisData;
+			ReturnedAnalysisData.push_back(ItemName);
+
+			pstmt = con->prepareStatement("SELECT * FROM weatherdata WHERE ItemID = ?");
+			pstmt->setString(1, EnteredAnalysisID);
+			weatherresult = pstmt->executeQuery();
+
+			while (weatherresult->next())
+			{
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Clouds"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Clear"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Atmosphere"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Snow"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Rain"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Drizzle"));
+				ReturnedAnalysisData.push_back(weatherresult->getInt("Thunderstorm"));
+			}
+
+			pstmt = con->prepareStatement("SELECT * FROM timedata WHERE ItemID = ?");
+			pstmt->setString(1, EnteredAnalysisID);
+			timeresult = pstmt->executeQuery();
+
+			//Grabs each number of items sold for each hour and appends them one by one
+			while (timeresult->next())
+			{
+				for (int iter = 2; iter < 26; iter++)
+				{
+					ReturnedAnalysisData.push_back(timeresult->getInt(iter));
+				}				
+			}
+
+			delete pstmt;
+			delete con;
+			delete result;
+			delete weatherresult;
+			delete timeresult;
+			return ReturnedAnalysisData;
+		}
+	}
+
+	delete pstmt;
+	delete con;
+	delete result;
+	delete weatherresult;
+	return ReturnedAnalysisData;
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------

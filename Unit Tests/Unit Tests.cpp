@@ -475,6 +475,45 @@ namespace UnitTests
 			Assert::AreEqual(TimeShouldBe, CheckData); //If CheckData is true then the test will pass
 			//-----------------------------------------------------------------------------------------------------
 		}
+
+		TEST_METHOD(AnalysisValidationReturnsCorrectly)
+		{
+			bool valid = false;
+
+			string TestAnalyseIDInput = "T3S701";
+			int TestAnalyseQuantityInput = 8;
+			string TestAnalyseItemInput = "UnitTest0001";
+
+			QuickEditDB("CREATE", TestAnalyseIDInput, TestAnalyseQuantityInput, TestAnalyseItemInput);
+
+			std::vector<std::variant<int, std::string>> ComparisonVector;
+			std::vector<std::variant<int, std::string>> AnalysisValidateReturn = MainFrame::AnalysisButtonOnClick(TestAnalyseIDInput, GlobalSQLPassword);
+
+			if (ComparisonVector != AnalysisValidateReturn)
+			{
+				valid = true;
+			}
+
+			QuickEditDB("DELETE", TestAnalyseIDInput, TestAnalyseQuantityInput, TestAnalyseItemInput);
+			Assert::AreEqual(true, valid); //They should not be equal as it is in the database
+		}
+
+		TEST_METHOD(AnalysisValidationPreventAccessingEmptyData)
+		{
+			bool valid = false;
+
+			string TestAnalyseIDInput = "ti10nuws";
+
+			std::vector<std::variant<int, std::string>> ComparisonVector;
+			std::vector<std::variant<int, std::string>> AnalysisValidateReturn = MainFrame::AnalysisButtonOnClick(TestAnalyseIDInput, GlobalSQLPassword);
+
+			if (ComparisonVector == AnalysisValidateReturn)
+			{
+				valid = true;
+			}
+
+			Assert::AreEqual(true, valid); //It should be equal as it is not in the database
+		}
 	};
 }
 
