@@ -28,6 +28,7 @@ This project makes use of a few libraries and was made using Visual Studio 2019 
 11. Also where there are calls to an API, please get your own API Key from OpenWeather and ipapi and paste it in to use with this project. (They are Completely Free as of Writing)
 12. To setup the SQL Database for this go to the SQL Database Section below to see how the tables are setup.
 13. If any of the following files are not found by your IDE "SciLexer.h", "Scintilla.h", or "stdafx.h" then you may download these online from a safe source and paste them into the main directory of the project.
+
 ---------------------------------------------------------------------------------
 
 
@@ -59,5 +60,29 @@ This project makes use of a few libraries and was made using Visual Studio 2019 
 
 #### Admin Logs (Only Accessible to the admin account and shows Logs) (I reset the table before taking this screenshot)
 ![AdminLogs](images/AdminLogs.PNG)
+
+---------------------------------------------------------------------------------
+
+
+### :abacus: SQL Database
+---------------------------------------------------------------------------------
+#### Schema and Tables
+![Schema&Tables](images/SchemaTables.PNG)
+
+#### Admin Logs Table (Has No Primary Key)
+![AdminLogsSQL](images/AdminLogsTable.PNG)
+
+#### Item Table (ItemID is the Primary Key) (ItemQuantity is Int) (ItemID and ItemName are varchar(45))
+![itemTableSQL](images/itemTableSQL.PNG)
+
+#### TimeData Table (ItemID is the Primary Key and varchar(45)) (The rest are int)
+![timeDataSQL1](images/timeDataSQL1.PNG)
+![timeDataSQL2](images/timeDataSQL2.PNG)
+
+#### UserLogin Table (Username is the Primary Key) (Both Username and Password are varchar(45))
+![userLoginSQL](images/userLoginSQL.PNG)
+
+#### Weather Logs Table (ItemID is the Primary Key and varchar(45)) (The rest are int)
+![weatherLogsSQL](images/weatherLogsSQL.PNG)
 
 ---------------------------------------------------------------------------------
