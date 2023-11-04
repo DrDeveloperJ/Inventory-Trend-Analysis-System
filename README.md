@@ -36,26 +36,27 @@ This project makes use of a few libraries and was made using Visual Studio 2019 
 ![ShowOwnerUnlock](images/ShopOwnerUnlock.png)
 
 #### The Signup and Login Page (Where each Staff Member Signs Up and Logs In)
-![SignupAndLogin](images/SignupAndLogin.png)
+![SignupAndLogin](images/SignupAndLogin.PNG)
 
 #### Stock Management Page (Where the stock can be manually changed around and new stock can be added/removed)
-![StockManagement](images/StockManagement.png)
+![StockManagement](images/StockManagement.PNG)
 
 #### Sell System (Where the staff member at the till can input items sold and how much whenever they are sold)
-![SellSystem](images/SellSystem.png)
+![SellSystem](images/SellSystem.PNG)
 
 #### Analysis System Find Item (The user inputs the item they want to analyze and if it is found it will proceed to the next part)
-![AnalysisFindItem](images/AnalysisFindItem.png)
+![AnalysisFindItem](images/AnalysisFindItem.PNG)
 
 #### Analysis System Choose Time or Weather (The user chooses whether they want to analyze it based on Weather or Time)
-![AnalysisChoose](images/AnalysisChoose.png)
+![AnalysisChoose](images/AnalysisChoose.PNG)
 
 #### Analysis System Weather (The user can view how much of the chosen item is sold based on the 7 weather types available on OpenWeather)
-![AnalysisWeather](images/AnalysisWeather.png)
+![AnalysisWeather](images/AnalysisWeather.PNG)
 
 #### Analysis System Time (The user can view how much of the chosen item is sold based on the time)
-![AnalysisTime](images/AnalysisTime.png)
+![AnalysisTime](images/AnalysisTime.PNG)
 
-#### Admin Logs (Only Accessible to the admin account and shows logs of what was sold each date and time and what)
-![AdminLogs](images/AdminLogs.png)
+#### Admin Logs (Only Accessible to the admin account and shows Logs) (I reset the table before taking this screenshot)
+![AdminLogs](images/AdminLogs.PNG)
+
 ---------------------------------------------------------------------------------
