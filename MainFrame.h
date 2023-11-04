@@ -28,26 +28,43 @@ public:
 	inline static void CreateButtonOnClick(string& EnteredCreateID, int& EnteredCreateQuantity, string& EnteredCreateItem, string& GlobalSQLPassword);
 	inline static void DeleteButtonOnClick(string& EnteredDeleteID, string& GlobalSQLPassword);
 	inline static void UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword);
-	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude);
+	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude, string GlobalUserName);
 	inline static std::vector<std::variant<int, std::string>> AnalysisButtonOnClick(string& EnteredAnalysisID, string& GlobalSQLPassword);
+	inline static bool LoginButtonOnClick(string& EnteredLoginUsername, string& EnteredLoginPassword, string& GlobalSQLPassword);
+	inline static void SignupButtonOnClick(string& EnteredSignupUsername, string& EnteredSignupPassword, string& GlobalSQLPassword);
 private:
 	void CreateOptions();
 
 	wxPanel* MainPanel;
+	wxPanel* headingPanel;
+	wxPanel* CurrentUserDisplayPanel;
 	wxStaticText* headingText;
 	wxPanel* InteractiveArea;
+	wxPanel* AdminLogsArea;
+	wxPanel* SignupLoginArea;
 	wxPanel* OwnerUnlockArea;
 	wxPanel* NavigationBar;
 	wxButton* StockManage;
 	wxButton* SellSystem;
 	wxButton* AnalysisPage;
+	wxButton* AdminLogs;
 	wxPanel* ActiveArea;
+	wxButton* LogOutButton;
 
 	static wxTextCtrl* SQLPasswordInput;
 	wxStaticText* SQLPasswordLabel;
 	wxPanel* OwnerUnlockDetailsArea;
 	wxStaticText* OwnerUnlockHeading;
 	wxButton* OwnerUnlockButton;
+
+	static wxTextCtrl* SignLogUsernameInput;
+	wxStaticText* SignLogUsernameLabel;
+	static wxTextCtrl* SignLogPasswordInput;
+	wxStaticText* SignLogPasswordLabel;
+	wxPanel* SignLogDetailsArea;
+	wxStaticText* SignLogHeading;
+	wxButton* LoginButton;
+	wxButton* SignupButton;
 
 	wxPanel* CreateArea;
 	wxStaticText* CreateHeading;
@@ -79,6 +96,7 @@ private:
 	static wxListView* basicListView;
 	static wxListView* sellBasicListView;
 	static wxListView* analysisBasicListView;
+	static wxListView* adminLogsBasicListView;
 
 	wxPanel* SellArea;
 	wxStaticText* SellHeading;
@@ -374,7 +392,7 @@ static size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdat
 	return size * nmemb;
 }
 
-inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude)
+inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude, string GlobalUserName)
 {
 
 	//Establishes a connection with the MySQL Database
@@ -507,8 +525,23 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 					std::time(&rawtime);
 					timeinfo = std::localtime(&rawtime);
 					int hour = timeinfo->tm_hour;
+					std::string hourstring = std::to_string(timeinfo->tm_hour);
+					std::string minutestring = std::to_string(timeinfo->tm_min);
+					std::string currenttime = hourstring + ":" + minutestring;
 
 					UpdateTimeDB(hour, pstmt, con, EnteredSellQuantity, EnteredSellID);
+
+					char buffer[80];
+					std::strftime(buffer, 80, "%d-%m-%Y", timeinfo);
+					std::string date(buffer);
+
+					pstmt = con->prepareStatement("INSERT INTO adminlogs(Username, ItemID, QuantitySold, Time, Date) VALUES(?,?,?,?,?)");
+					pstmt->setString(1, GlobalUserName);
+					pstmt->setString(2, EnteredSellID);
+					pstmt->setInt(3, EnteredSellQuantity);
+					pstmt->setString(4, currenttime);
+					pstmt->setString(5, date);
+					pstmt->executeQuery();
 				}
 			}
 
@@ -616,5 +649,165 @@ inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnCl
 	return ReturnedAnalysisData;
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------------
+
+//Signup and Login Function Definitions
+// ------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------------
+
+inline bool MainFrame::LoginButtonOnClick(string& EnteredLoginUsername, string& EnteredLoginPassword, string& GlobalSQLPassword)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("SELECT * FROM userlogin");
+	result = pstmt->executeQuery();
+
+	while (result->next())
+	{
+		string CheckUsername = result->getString("Username").c_str();
+		string FoundPassword = result->getString("Password").c_str();
+		if (CheckUsername == EnteredLoginUsername)
+		{
+			string AlteredPass = "";
+
+			//Performs a Caesar Cipher without altering any numbers or other characters
+			for (int i = 0; i < FoundPassword.length(); i++) {
+				char Letter = FoundPassword[i];
+				if (isalpha(Letter)) {
+					int asciiValue = int(Letter);
+					if (isupper(Letter))
+					{
+						asciiValue = (asciiValue - 65 - 3 + 26) % 26 + 65;
+					}
+					else
+					{
+						asciiValue = (asciiValue - 97 - 3 + 26) % 26 + 97;
+					}
+					char NewLetter = char(asciiValue);
+					AlteredPass += NewLetter;
+				}
+				else
+				{
+					AlteredPass += Letter;
+				}
+			}
+			
+			if (EnteredLoginPassword == AlteredPass)
+			{
+				return true;
+			}
+
+			break;
+		}
+	}
+
+	return false;
+}
+
+
+inline void MainFrame::SignupButtonOnClick(string& EnteredSignupUsername, string& EnteredSignupPassword, string& GlobalSQLPassword)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	string AlteredPass = "";
+
+	//Performs a Caesar Cipher without altering any numbers or other characters
+	for (int i = 0; i < EnteredSignupPassword.length(); i++) {
+		char Letter = EnteredSignupPassword[i];
+		if (isalpha(Letter)) {
+			int asciiValue = int(Letter);
+			if (isupper(Letter))
+			{
+				asciiValue = (asciiValue - 65 + 3) % 26 + 65;
+			}
+			else
+			{
+				asciiValue = (asciiValue - 97 + 3) % 26 + 97;
+			}
+			char NewLetter = char(asciiValue);
+			AlteredPass += NewLetter;
+		}
+		else
+		{
+			AlteredPass += Letter;
+		}
+	}
+
+	bool ExistsAlready = false;
+
+	pstmt = con->prepareStatement("SELECT * FROM userlogin");
+	result = pstmt->executeQuery();
+
+	while (result->next())
+	{
+		string CheckUsername = result->getString("Username").c_str();
+		if (CheckUsername == EnteredSignupUsername)
+		{
+			ExistsAlready = true;
+			break;
+		}
+	}
+
+	if (ExistsAlready == false)
+	{
+		pstmt = con->prepareStatement("INSERT INTO userlogin(Username, Password) VALUES(?,?)");
+		pstmt->setString(1, EnteredSignupUsername);
+		pstmt->setString(2, AlteredPass);
+		pstmt->executeQuery();
+	}
+
+	delete pstmt;
+	delete con;
+	delete result;
+}
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------

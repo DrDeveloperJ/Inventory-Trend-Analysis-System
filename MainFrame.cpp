@@ -18,6 +18,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 	CreateOptions();
 }
 
+static std::string GlobalCurrentUser;
 static std::string GlobalSQLPassword;
 static std::string UserLatitude;
 static std::string UserLongitude;
@@ -25,6 +26,7 @@ static std::string UserLongitude;
 wxListView* MainFrame::basicListView = nullptr;
 wxListView* MainFrame::sellBasicListView = nullptr;
 wxListView* MainFrame::analysisBasicListView = nullptr;
+wxListView* MainFrame::adminLogsBasicListView = nullptr;
 
 //Loops through the database and inserts all the current data into the treeview table
 //-----------------------------------------------------------------------------------------------------
@@ -65,7 +67,6 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 	{
 		sql::SQLString ItemName{ result->getString("ItemName") };
 		wxString wxItemName{ wxString::FromUTF8(ItemName.c_str()) };
-		//sql::SQLString ItemQuantity{ result->getInt("ItemQuantity") };
 		wxString wxItemQuantity{ wxString::Format(wxT("%d"), result->getInt("ItemQuantity")) };
 		sql::SQLString ItemID{ result->getString("ItemID") };
 		wxString wxItemID{ wxString::FromUTF8(ItemID.c_str()) };
@@ -80,52 +81,126 @@ void StartTreeview(wxPanel*& TreeviewTable, wxListView*& basicListView)
 };
 //-----------------------------------------------------------------------------------------------------
 
+void StartAdminTreeview(wxPanel*& AdminLogsTreeviewTable, wxListView*& adminLogsBasicListView)
+{
+	int YPos{ 0 };
+
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* result;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("SELECT * FROM adminlogs;");
+	result = pstmt->executeQuery();
+
+	while (result->next())
+	{
+		sql::SQLString AdminLogUser{ result->getString("Username") };
+		wxString wxAdminLogUser{ wxString::FromUTF8(AdminLogUser.c_str()) };
+		sql::SQLString AdminLogItemID{ result->getString("ItemID") };
+		wxString wxAdminLogItemID{ wxString::FromUTF8(AdminLogItemID.c_str()) };
+		wxString wxItemQuantitySold{ wxString::Format(wxT("%d"), result->getInt("QuantitySold")) };
+		sql::SQLString AdminLogTime{ result->getString("Time") };
+		wxString wxAdminLogTime{ wxString::FromUTF8(AdminLogTime.c_str()) };
+		sql::SQLString AdminLogDate{ result->getString("Date") };
+		wxString wxAdminLogDate{ wxString::FromUTF8(AdminLogDate.c_str()) };
+
+		adminLogsBasicListView->InsertItem(0, wxAdminLogUser);
+		adminLogsBasicListView->SetItem(0, 1, wxAdminLogItemID);
+		adminLogsBasicListView->SetItem(0, 2, wxItemQuantitySold);
+		adminLogsBasicListView->SetItem(0, 3, wxAdminLogTime);
+		adminLogsBasicListView->SetItem(0, 4, wxAdminLogDate);
+	};
+
+	delete pstmt;
+	delete con;
+}
+
 void MainFrame::CreateOptions()
 {
 
 	//Creates the Main Page as "MainPanel" and prepares a font for the page heading
 	wxFont headingFont(wxFontInfo(wxSize(0, 36)).Bold());
 	MainPanel = new wxPanel(this);
-	MainPanel->SetBackgroundColour(*wxRED);
 
 	//Creates a heading
-	static wxStaticText* headingText = new wxStaticText(MainPanel, wxID_ANY, "Stock Management Page",
-		wxPoint(0, 0), wxSize(1000, 100), wxALIGN_CENTER_HORIZONTAL);
-	headingText->SetBackgroundColour(*wxWHITE);
+	headingPanel = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 0), wxSize(1000, 100));
+	static wxStaticText* headingText = new wxStaticText(headingPanel, wxID_ANY, "Stock Management Page",
+		wxPoint(250, 20), wxSize(200, 50), wxALIGN_CENTRE);
+	headingPanel->SetBackgroundColour(wxColour(35, 201, 255));
 	headingText->SetFont(headingFont);
+
+	//Shows the Current User
+	wxFont CurrentUserDisplayFont(wxFontInfo(wxSize(0, 18)).Bold());
+	CurrentUserDisplayPanel = new wxPanel(headingPanel, wxID_ANY, wxPoint(800, 0), wxSize(200, 100));
+	static wxStaticText* CurrentUserDisplay = new wxStaticText(CurrentUserDisplayPanel, wxID_ANY, "Welcome",
+		wxPoint(50, 35), wxSize(100, 50), wxALIGN_CENTER_HORIZONTAL);
+	CurrentUserDisplayPanel->SetBackgroundColour(wxColour(0, 161, 214));
+	CurrentUserDisplay->SetFont(CurrentUserDisplayFont);
 
 	/*This defines the rest of the page which will include the navigation bar on the left and the rest is what will
 	be interacted with by the user (this will be called ActiveArea) */
 	InteractiveArea = new wxPanel(MainPanel, wxID_ANY, wxPoint(0, 100), wxSize(1000, 500));
-	InteractiveArea->SetBackgroundColour(*wxGREEN);
+	InteractiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 
+	//Where the owner unlocks the software for the day using their SQL Password
 	static wxPanel* OwnerUnlockArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(1000, 500));
-	OwnerUnlockArea->SetBackgroundColour(*wxBLUE);
+	OwnerUnlockArea->SetBackgroundColour(wxColour(203, 197, 234));
+
+	//Where each user Signs up and Logs in
+	static wxPanel* SignupLoginArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(1000, 500));
+	SignupLoginArea->SetBackgroundColour(wxColour(203, 197, 234));
+	SignupLoginArea->Show(false);
 
 	//StockActive is the Stock Management page
 	static wxPanel* StockActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	StockActiveArea->SetBackgroundColour(*wxGREEN);
+	StockActiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 	StockActiveArea->Show(false);
 	//AnalysisActiveArea is the First Analysis page
 	static wxPanel* AnalysisActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	AnalysisActiveArea->SetBackgroundColour(*wxGREEN);
+	AnalysisActiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 	AnalysisActiveArea->Show(false);
 	//AnalysisActiveArea is the Second Analysis page that is shown when the ItemID searched is validated
 	static wxPanel* AnalysisChooseArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	AnalysisChooseArea->SetBackgroundColour(*wxGREEN);
+	AnalysisChooseArea->SetBackgroundColour(wxColour(203, 197, 234));
 	AnalysisChooseArea->Show(false);
 	//WeatherAnalysisActiveArea is the Analysis page for Weather that is shown when the user chooses weather in AnalysisChooseArea
 	static wxPanel* WeatherAnalysisActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	WeatherAnalysisActiveArea->SetBackgroundColour(*wxGREEN);
+	WeatherAnalysisActiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 	WeatherAnalysisActiveArea->Show(false);
 	//TimeAnalysisActiveArea is the Analysis page for Weather that is shown when the user chooses weather in AnalysisChooseArea
 	static wxPanel* TimeAnalysisActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	TimeAnalysisActiveArea->SetBackgroundColour(*wxGREEN);
+	TimeAnalysisActiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 	TimeAnalysisActiveArea->Show(false);
 	//StockActive area is the SellSystem page
 	static wxPanel* SellActiveArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
-	SellActiveArea->SetBackgroundColour(*wxGREEN);
+	SellActiveArea->SetBackgroundColour(wxColour(203, 197, 234));
 	SellActiveArea->Show(false);
+	//AdminLogsArea is for the admin to check the logs of what each user has done/sold
+	static wxPanel* AdminLogsArea = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(150, 0), wxSize(850, 500));
+	AdminLogsArea->SetBackgroundColour(wxColour(203, 197, 234));
+	AdminLogsArea->Show(false);
 
 	static wxPanel* SellTreeviewTable = new wxPanel(SellActiveArea, wxID_ANY, wxPoint(440, 25), wxSize(399, 450));
 	SellTreeviewTable->SetBackgroundColour(*wxWHITE);
@@ -135,14 +210,18 @@ void MainFrame::CreateOptions()
 	AnalysisTreeviewTable->SetBackgroundColour(*wxWHITE);
 	analysisBasicListView = new wxListView(AnalysisTreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(399, 450));
 
+	static wxPanel* AdminLogsTreeviewTable = new wxPanel(AdminLogsArea, wxID_ANY, wxPoint(100, 25), wxSize(665, 450));
+	AdminLogsTreeviewTable->SetBackgroundColour(*wxWHITE);
+	adminLogsBasicListView = new wxListView(AdminLogsTreeviewTable, wxID_ANY, wxDefaultPosition, wxSize(665, 450));
+
 	//Navigation Bar for navigating between pages
 	//-----------------------------------------------------------------------------------------------------
-	NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
-	NavigationBar->SetBackgroundColour(*wxYELLOW);
+	static wxPanel* NavigationBar = new wxPanel(InteractiveArea, wxID_ANY, wxPoint(0, 0), wxSize(150, 500));
+	NavigationBar->SetBackgroundColour(wxColour(170, 250, 200));
 	NavigationBar->Show(false);
 
 	AnalysisPage = new wxButton(NavigationBar, wxID_ANY, "Analysis", wxPoint(25, 20), wxSize(100, 75));
-	AnalysisPage->SetBackgroundColour(*wxBLUE);
+	AnalysisPage->SetBackgroundColour(wxColour(242, 254, 247));
 	AnalysisPage->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		StockActiveArea->Show(false);
 		SellActiveArea->Show(false);
@@ -150,11 +229,12 @@ void MainFrame::CreateOptions()
 		AnalysisChooseArea->Show(false);
 		WeatherAnalysisActiveArea->Show(false);
 		TimeAnalysisActiveArea->Show(false);
+		AdminLogsArea->Show(false);
 		headingText->SetLabel(wxT("Analysis Page"));
 		headingText->Refresh();
 		});
 	StockManage = new wxButton(NavigationBar, wxID_ANY, "Stock Manage", wxPoint(25, 120), wxSize(100, 75));
-	StockManage->SetBackgroundColour(*wxBLUE);
+	StockManage->SetBackgroundColour(wxColour(242, 254, 247));
 	StockManage->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		AnalysisActiveArea->Show(false);
 		SellActiveArea->Show(false);
@@ -162,11 +242,12 @@ void MainFrame::CreateOptions()
 		AnalysisChooseArea->Show(false);
 		WeatherAnalysisActiveArea->Show(false);
 		TimeAnalysisActiveArea->Show(false);
+		AdminLogsArea->Show(false);
 		headingText->SetLabel(wxT("Stock Management Page"));
 		headingText->Refresh();
 		});
 	SellSystem = new wxButton(NavigationBar, wxID_ANY, "Sell System", wxPoint(25, 220), wxSize(100, 75));
-	SellSystem->SetBackgroundColour(*wxBLUE);
+	SellSystem->SetBackgroundColour(wxColour(242, 254, 247));
 	SellSystem->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		AnalysisActiveArea->Show(false);
 		StockActiveArea->Show(false);
@@ -174,7 +255,43 @@ void MainFrame::CreateOptions()
 		AnalysisChooseArea->Show(false);
 		WeatherAnalysisActiveArea->Show(false);
 		TimeAnalysisActiveArea->Show(false);
+		AdminLogsArea->Show(false);
 		headingText->SetLabel(wxT("Sell System"));
+		headingText->Refresh();
+		});
+	AdminLogs = new wxButton(NavigationBar, wxID_ANY, "Admin Logs", wxPoint(25, 320), wxSize(100, 75));
+	AdminLogs->SetBackgroundColour(wxColour(242, 254, 247));
+	AdminLogs->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+		if (GlobalCurrentUser == "Admin" | GlobalCurrentUser == "admin")
+		{
+			AnalysisActiveArea->Show(false);
+			StockActiveArea->Show(false);
+			SellActiveArea->Show(false);
+			AnalysisChooseArea->Show(false);
+			WeatherAnalysisActiveArea->Show(false);
+			TimeAnalysisActiveArea->Show(false);
+			AdminLogsArea->Show(true);
+			headingText->SetLabel(wxT("Admin Logs"));
+			headingText->Refresh();
+			adminLogsBasicListView->DeleteAllItems();
+			StartAdminTreeview(AdminLogsTreeviewTable, adminLogsBasicListView);
+		}
+		});
+	LogOutButton = new wxButton(NavigationBar, wxID_ANY, "Log Out", wxPoint(25, 420), wxSize(100, 75));
+	LogOutButton->SetBackgroundColour(wxColour(242, 254, 247));
+	LogOutButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
+		AnalysisActiveArea->Show(false);
+		StockActiveArea->Show(false);
+		SellActiveArea->Show(false);
+		AnalysisChooseArea->Show(false);
+		WeatherAnalysisActiveArea->Show(false);
+		TimeAnalysisActiveArea->Show(false);
+		NavigationBar->Show(false);
+		SignupLoginArea->Show(true);
+		AdminLogsArea->Show(false);
+		headingText->SetLabel("Stock Management Page");
+		CurrentUserDisplay->SetLabel(wxT("Welcome"));
+		GlobalCurrentUser = "";
 		headingText->Refresh();
 		});
 	//-----------------------------------------------------------------------------------------------------
@@ -206,22 +323,22 @@ void MainFrame::CreateOptions()
 	CreateHeading->SetFont(SectionHeadingFont);
 
 	static wxTextCtrl* CreateIDInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
-	CreateIDInput->SetBackgroundColour(*wxBLUE);
+	CreateIDInput->SetBackgroundColour(*wxWHITE);
 	CreateIDLabel = new wxStaticText(CreateArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	static wxTextCtrl* CreateItemInput = new wxTextCtrl(CreateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
-	CreateItemInput->SetBackgroundColour(*wxBLUE);
+	CreateItemInput->SetBackgroundColour(*wxWHITE);
 	CreateItemLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Name",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	static wxTextCtrl* CreateQuantityInput = new wxTextCtrl(CreateArea, wxID_ANY, "0", wxPoint(5, 140), wxSize(190, 20));
-	CreateQuantityInput->SetBackgroundColour(*wxBLUE);
+	CreateQuantityInput->SetBackgroundColour(*wxWHITE);
 	CreateQuantityLabel = new wxStaticText(CreateArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	createButton = new wxButton(CreateArea, wxID_ANY, "Create", wxPoint(75, 170), wxSize(50, 25));
-	createButton->SetBackgroundColour(*wxBLUE);
+	createButton->SetBackgroundColour(wxColour(242, 254, 247));
 	createButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 
 		//Grab Values
@@ -253,12 +370,12 @@ void MainFrame::CreateOptions()
 	DeleteHeading->SetFont(SectionHeadingFont);
 
 	static wxTextCtrl* DeleteInput = new wxTextCtrl(DeleteArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
-	DeleteInput->SetBackgroundColour(*wxBLUE);
+	DeleteInput->SetBackgroundColour(*wxWHITE);
 	DeleteInputLabel = new wxStaticText(DeleteArea, wxID_ANY, "Item ID",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	DeleteButton = new wxButton(DeleteArea, wxID_ANY, "Delete", wxPoint(75, 140), wxSize(50, 25));
-	DeleteButton->SetBackgroundColour(*wxBLUE);
+	DeleteButton->SetBackgroundColour(wxColour(242, 254, 247));
 	DeleteButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 
 		//Grab Value
@@ -289,22 +406,22 @@ void MainFrame::CreateOptions()
 	UpdateHeading->SetFont(SectionHeadingFont);
 
 	static wxTextCtrl* UpdateIDInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
-	UpdateIDInput->SetBackgroundColour(*wxBLUE);
+	UpdateIDInput->SetBackgroundColour(*wxWHITE);
 	UpdateIDLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	static wxTextCtrl* UpdateItemInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 100), wxSize(190, 20));
-	UpdateItemInput->SetBackgroundColour(*wxBLUE);
+	UpdateItemInput->SetBackgroundColour(*wxWHITE);
 	UpdateItemLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Name",
 		wxPoint(50, 80), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	static wxTextCtrl* UpdateQuantityInput = new wxTextCtrl(UpdateArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
-	UpdateQuantityInput->SetBackgroundColour(*wxBLUE);
+	UpdateQuantityInput->SetBackgroundColour(*wxWHITE);
 	UpdateQuantityLabel = new wxStaticText(UpdateArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	UpdateButton = new wxButton(UpdateArea, wxID_ANY, "Update", wxPoint(75, 170), wxSize(50, 25));
-	UpdateButton->SetBackgroundColour(*wxBLUE);
+	UpdateButton->SetBackgroundColour(wxColour(242, 254, 247));
 	UpdateButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
 		//Grab Values
@@ -352,17 +469,17 @@ void MainFrame::CreateOptions()
 	SellHeading->SetFont(SectionHeadingFont);
 
 	static wxTextCtrl* SellIDInput = new wxTextCtrl(SellArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
-	SellIDInput->SetBackgroundColour(*wxBLUE);
+	SellIDInput->SetBackgroundColour(*wxWHITE);
 	SellIDLabel = new wxStaticText(SellArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	static wxTextCtrl* SellQuantityInput = new wxTextCtrl(SellArea, wxID_ANY, "", wxPoint(5, 140), wxSize(190, 20));
-	SellQuantityInput->SetBackgroundColour(*wxBLUE);
+	SellQuantityInput->SetBackgroundColour(*wxWHITE);
 	SellQuantityLabel = new wxStaticText(SellArea, wxID_ANY, "Item Quantity",
 		wxPoint(50, 120), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	SellButton = new wxButton(SellArea, wxID_ANY, "Sell", wxPoint(75, 170), wxSize(50, 25));
-	SellButton->SetBackgroundColour(*wxBLUE);
+	SellButton->SetBackgroundColour(wxColour(242, 254, 247));
 	SellButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
 		//Grab Values
@@ -371,7 +488,7 @@ void MainFrame::CreateOptions()
 		int EnteredSellQuantity = wxAtoi(SellQuantityInput->GetValue());
 		//---------------------------------------------------------------------
 
-		SellButtonOnClick(EnteredSellID, EnteredSellQuantity, GlobalSQLPassword, UserLatitude, UserLongitude);
+		SellButtonOnClick(EnteredSellID, EnteredSellQuantity, GlobalSQLPassword, UserLatitude, UserLongitude, GlobalCurrentUser);
 
 		//Resets the Treeview Table to empty for refilling
 		sellBasicListView->DeleteAllItems();
@@ -664,12 +781,12 @@ void MainFrame::CreateOptions()
 	AnalysisHeading->SetFont(SectionHeadingFont);
 
 	static wxTextCtrl* AnalysisIDInput = new wxTextCtrl(AnalysisArea, wxID_ANY, "", wxPoint(5, 60), wxSize(190, 20));
-	SellIDInput->SetBackgroundColour(*wxBLUE);
+	AnalysisIDInput->SetBackgroundColour(*wxWHITE);
 	AnalysisIDLabel = new wxStaticText(AnalysisArea, wxID_ANY, "Item ID",
 		wxPoint(50, 40), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	AnalysisButton = new wxButton(AnalysisArea, wxID_ANY, "Analyse", wxPoint(75, 170), wxSize(50, 25));
-	AnalysisButton->SetBackgroundColour(*wxBLUE);
+	AnalysisButton->SetBackgroundColour(wxColour(242, 254, 247));
 	AnalysisButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 
 		//Grab Values
@@ -733,7 +850,7 @@ void MainFrame::CreateOptions()
 	AnalysisButtonsFont.SetPixelSize(wxSize(0, 24));
 
 	WeatherAnalysisButton = new wxButton(AnalysisChooseArea, wxID_ANY, "Weather", wxPoint(200, 170), wxSize(150, 150));
-	WeatherAnalysisButton->SetBackgroundColour(*wxBLUE);
+	WeatherAnalysisButton->SetBackgroundColour(wxColour(242, 254, 247));
 	WeatherAnalysisButton->SetFont(AnalysisButtonsFont);
 	WeatherAnalysisButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		AnalysisChooseArea->Show(false);
@@ -741,7 +858,7 @@ void MainFrame::CreateOptions()
 		});
 
 	TimeAnalysisButton = new wxButton(AnalysisChooseArea, wxID_ANY, "Time", wxPoint(500, 170), wxSize(150, 150));
-	TimeAnalysisButton->SetBackgroundColour(*wxBLUE);
+	TimeAnalysisButton->SetBackgroundColour(wxColour(242, 254, 247));
 	TimeAnalysisButton->SetFont(AnalysisButtonsFont);
 	TimeAnalysisButton->Bind(wxEVT_BUTTON, [](wxCommandEvent& event) {
 		AnalysisChooseArea->Show(false);
@@ -764,12 +881,12 @@ void MainFrame::CreateOptions()
 	OwnerUnlockHeading->SetFont(OwnerUnlockSectionHeadingFont);
 
 	static wxTextCtrl* SQLPasswordInput = new wxTextCtrl(OwnerUnlockDetailsArea, wxID_ANY, "", wxPoint(5, 90), wxSize(190, 20));
-	SQLPasswordInput->SetBackgroundColour(*wxBLUE);
+	SQLPasswordInput->SetBackgroundColour(*wxWHITE);
 	SQLPasswordLabel = new wxStaticText(OwnerUnlockDetailsArea, wxID_ANY, "SQL Password",
 		wxPoint(50, 70), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
 
 	OwnerUnlockButton = new wxButton(OwnerUnlockDetailsArea, wxID_ANY, "Unlock", wxPoint(75, 170), wxSize(50, 25));
-	OwnerUnlockButton->SetBackgroundColour(*wxBLUE);
+	OwnerUnlockButton->SetBackgroundColour(wxColour(242, 254, 247));
 	OwnerUnlockButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 
 		//Grab Value
@@ -809,8 +926,7 @@ void MainFrame::CreateOptions()
 
 		//Unlocks the Program
 		OwnerUnlockArea->Show(false);
-		NavigationBar->Show(true);
-		StockActiveArea->Show(true);
+		SignupLoginArea->Show(true);
 
 		//Grabs the User's Latitude and Longitude using a HTTP request to the ipapi API
 		//-----------------------------------------------------------------------------------------------------
@@ -850,6 +966,87 @@ void MainFrame::CreateOptions()
 	//--------------------------------------------------------------------------------------------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
 
+
+	//Signup and Login Page
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+	wxFont SignupLoginSectionHeadingFont(wxFontInfo(wxSize(0, 20)).Bold());
+	SignLogDetailsArea = new wxPanel(SignupLoginArea, wxID_ANY, wxPoint(400, 125), wxSize(200, 200));
+	SignLogDetailsArea->SetBackgroundColour(*wxWHITE);
+	SignLogHeading = new wxStaticText(SignLogDetailsArea, wxID_ANY, "Signup or Login",
+		wxPoint(20, 5), wxSize(100, 50), wxALIGN_CENTER_HORIZONTAL);
+	SignLogHeading->SetFont(SignupLoginSectionHeadingFont);
+
+	static wxTextCtrl* SignLogUsernameInput = new wxTextCtrl(SignLogDetailsArea, wxID_ANY, "", wxPoint(5, 70), wxSize(190, 20));
+	SignLogUsernameInput->SetBackgroundColour(*wxWHITE);
+	SignLogUsernameLabel = new wxStaticText(SignLogDetailsArea, wxID_ANY, "Username",
+		wxPoint(50, 50), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	static wxTextCtrl* SignLogPasswordInput = new wxTextCtrl(SignLogDetailsArea, wxID_ANY, "", wxPoint(5, 120), wxSize(190, 20));
+	SignLogPasswordInput->SetBackgroundColour(*wxWHITE);
+	SignLogPasswordLabel = new wxStaticText(SignLogDetailsArea, wxID_ANY, "Password",
+		wxPoint(50, 100), wxSize(100, 20), wxALIGN_CENTER_HORIZONTAL);
+
+	LoginButton = new wxButton(SignLogDetailsArea, wxID_ANY, "Login", wxPoint(110, 170), wxSize(50, 25));
+	LoginButton->SetBackgroundColour(wxColour(242, 254, 247));
+	LoginButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
+
+		//Grab Values
+		//---------------------------------------------------------------------
+		std::string EnteredLoginUsername = (SignLogUsernameInput->GetValue()).ToStdString();
+		std::string EnteredLoginPassword = (SignLogPasswordInput->GetValue()).ToStdString();
+		//---------------------------------------------------------------------
+
+		
+		bool LoginValid = LoginButtonOnClick(EnteredLoginUsername, EnteredLoginPassword, GlobalSQLPassword);
+		
+		if (LoginValid == true)
+		{
+			GlobalCurrentUser = EnteredLoginUsername;
+			CurrentUserDisplay->SetLabel(GlobalCurrentUser);
+
+			SignLogUsernameInput->ChangeValue("");
+			SignLogPasswordInput->ChangeValue("");
+			SignupLoginArea->Show(false);
+			NavigationBar->Show(true);
+			StockActiveArea->Show(true);
+		}
+		
+		});
+
+	SignupButton = new wxButton(SignLogDetailsArea, wxID_ANY, "Signup", wxPoint(35, 170), wxSize(50, 25));
+	SignupButton->SetBackgroundColour(wxColour(242, 254, 247));
+	SignupButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
+
+		//Grab Values
+		//---------------------------------------------------------------------
+		std::string EnteredSignupUsername = (SignLogUsernameInput->GetValue()).ToStdString();
+		std::string EnteredSignupPassword = (SignLogPasswordInput->GetValue()).ToStdString();
+		//---------------------------------------------------------------------
+
+		SignupButtonOnClick(EnteredSignupUsername, EnteredSignupPassword, GlobalSQLPassword);
+		});
+
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
+
+	//Admin Logs Page
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
+	adminLogsBasicListView->AppendColumn("Username");
+	adminLogsBasicListView->AppendColumn("ItemID");
+	adminLogsBasicListView->AppendColumn("QuantitySold");
+	adminLogsBasicListView->AppendColumn("Time");
+	adminLogsBasicListView->AppendColumn("Date");
+	adminLogsBasicListView->SetColumnWidth(0, 133);
+	adminLogsBasicListView->SetColumnWidth(1, 133);
+	adminLogsBasicListView->SetColumnWidth(2, 133);
+	adminLogsBasicListView->SetColumnWidth(3, 133);
+	adminLogsBasicListView->SetColumnWidth(4, 133);
+
+	//--------------------------------------------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------------------------------------------
+
 }
-
-

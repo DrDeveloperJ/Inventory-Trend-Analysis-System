@@ -293,10 +293,138 @@ void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, 
 		pstmt = con->prepareStatement("DELETE FROM timedata WHERE ItemID = ?");
 		pstmt->setString(1, TestIDInput);
 		pstmt->executeQuery();
+
+		pstmt = con->prepareStatement("DELETE FROM adminlogs WHERE Username = ?");
+		pstmt->setString(1, "UnitTest");
+		pstmt->executeQuery();
 	}
 
 	delete pstmt;
 	delete con;
+}
+
+void DeleteFromSignupLoginDB(string Username)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt = nullptr;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("DELETE FROM userlogin WHERE Username = ?");
+	pstmt->setString(1, Username);
+	pstmt->executeQuery();
+
+	delete pstmt;
+	delete con;
+}
+
+void AddToSignupLoginDB(string Username, string Password)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt = nullptr;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("INSERT INTO userlogin(Username, Password) VALUES(?,?)");
+	pstmt->setString(1, Username);
+	pstmt->setString(2, Password);
+	pstmt->executeQuery();
+
+	delete pstmt;
+	delete con;
+}
+
+bool CheckSignupLoginDB(string Username, string Password)
+{
+	//Establishes a connection with the MySQL Database
+	//-----------------------------------------------------------------------------------------------------
+	const std::string server = "tcp://managestock.mysql.database.azure.com:3306";
+	const std::string username = "rootConnect";
+	const std::string password = GlobalSQLPassword;
+
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt = nullptr;
+	sql::ResultSet* result = nullptr;
+
+	try
+	{
+		driver = get_driver_instance();
+		con = driver->connect(server, username, password);
+	}
+	catch (sql::SQLException e)
+	{
+		//cout << "Could not connect to server. Error message: " << e.what() << endl;
+		system("pause");
+		exit(1);
+	}
+
+	con->setSchema("itemdatabase");
+	//-----------------------------------------------------------------------------------------------------
+
+	pstmt = con->prepareStatement("SELECT * FROM userlogin WHERE Username = ?");
+	pstmt->setString(1, Username);
+	result = pstmt->executeQuery();
+
+	while (result->next())
+	{
+		string FoundUser = result->getString("Username").c_str();
+		string FoundPass = result->getString("Password").c_str();
+		if (FoundPass == Password)
+		{
+
+			delete pstmt;
+			delete con;
+			delete result;
+
+			return true;
+		}
+	}
+
+	delete pstmt;
+	delete con;
+	delete result;
+	return false;
 }
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -382,7 +510,7 @@ namespace UnitTests
 
 			QuickEditDB("CREATE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
 
-			MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude);
+			MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude, "UnitTest");
 
 			bool CheckData = CheckDatabase(TestSellIDInput, NewQuantity, TestSellItemInput);
 			QuickEditDB("DELETE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
@@ -429,7 +557,7 @@ namespace UnitTests
 
 				int ToSell = 2;
 
-				MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude);
+				MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude, "UnitTest");
 
 				int WeatherShouldBe = PreWeather + ToSell;
 
@@ -465,7 +593,7 @@ namespace UnitTests
 
 			int ToSell = 2;
 
-			MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude);
+			MainFrame::SellButtonOnClick(TestSellIDInput, ToSell, GlobalSQLPassword, UserLatitude, UserLongitude, "UnitTest");
 
 			int TimeShouldBe = PreTime + ToSell;
 
@@ -513,6 +641,36 @@ namespace UnitTests
 			}
 
 			Assert::AreEqual(true, valid); //It should be equal as it is not in the database
+		}
+
+		TEST_METHOD(SignupWorksCorrectly)
+		{
+			string EnteredSignupUsername = "T3S701";
+			string EnteredSignupPassword = "UnitTest0001";
+			string PasswordShouldBe = "XqlwWhvw0001";
+
+			MainFrame::SignupButtonOnClick(EnteredSignupUsername, EnteredSignupPassword, GlobalSQLPassword);
+
+			bool valid = CheckSignupLoginDB(EnteredSignupUsername, PasswordShouldBe);
+
+			DeleteFromSignupLoginDB(EnteredSignupUsername);
+
+			Assert::AreEqual(true, valid);
+		}
+
+		TEST_METHOD(LoginWorksCorrectly)
+		{
+			string EnteredSignupUsername = "T3S701";
+			string EnteredSignupPassword = "UnitTest0001";
+			string PasswordEncrypted = "XqlwWhvw0001";
+
+			AddToSignupLoginDB(EnteredSignupUsername, PasswordEncrypted);
+
+			bool LoginValid = MainFrame::LoginButtonOnClick(EnteredSignupUsername, EnteredSignupPassword, GlobalSQLPassword);
+
+			DeleteFromSignupLoginDB(EnteredSignupUsername);
+
+			Assert::AreEqual(true, LoginValid);
 		}
 	};
 }
