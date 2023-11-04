@@ -35,7 +35,7 @@ This project makes use of a few libraries and was made using Visual Studio 2019 
 ### :camera_flash: Screenshots
 ---------------------------------------------------------------------------------
 #### Owner Unlock (When the software is launched, the Shop Owner/Manager must unlock it for the day using their SQL Password)
-![ShowOwnerUnlock](images/ShopOwnerUnlock.png)
+![ShopOwnerUnlock](images/ShopOwnerUnlock.PNG)
 
 #### The Signup and Login Page (Where each Staff Member Signs Up and Logs In)
 ![SignupAndLogin](images/SignupAndLogin.PNG)
