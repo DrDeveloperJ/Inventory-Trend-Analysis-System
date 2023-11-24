@@ -4,6 +4,13 @@
 ## A fully functional Inventory Management System that shows Trend Insights based on Time and Weather written in C++
 
 
+### :video_camera: YouTube Demo (Click the Photo)
+---------------------------------------------------------------------------------
+[![Youtube Project Demo](images/YoutubeThumbnail.png)](https://youtu.be/wMTxltScCDo?si=PMo3HO6nh6ROE35i)
+
+---------------------------------------------------------------------------------
+
+
 ### :arrow_right: About
 ---------------------------------------------------------------------------------
 This project makes use of a graphical user interface for a business such as a grocery shop to be able to manage their stock efficiently using the Stock Management Page. It also has a Sell System Page where as items are purchased, a person at a till for example can input the item sold and how much of it was sold and the system will automatically log the hour and weather at which it was sold. This information can then be viewed on the Analysis page to see if there are any trends in purchases of Ice Cream for example (It will probably show the highest number of products sold under the "Clear" weather) and the business can make use of these analytics accordingly. It also has an Admin Logs section where only the admin (The username "Admin" or "admin") can view what each staff member has sold and at what time and how much.
