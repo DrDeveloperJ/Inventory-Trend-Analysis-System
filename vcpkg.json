@@ -1,0 +1,16 @@
+{
+  "name": "wx-app",
+  "version": "1.0.0",
+  "builtin-baseline": "ab2977be50c702126336e5088f4836060733c899",
+  "dependencies": [
+    "curl",
+    "nlohmann-json",
+    {
+      "name": "mysql-connector-cpp",
+      "features": [ "jdbc" ]
+    },
+    {
+      "name": "wxwidgets"
+    }
+  ]
+}

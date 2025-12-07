@@ -11,10 +11,10 @@
 
 #include <curl/curl.h>
 
-#include "mysql_connection.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/prepared_statement.h>
+#include <jdbc/mysql_connection.h>
+#include <jdbc/cppconn/driver.h>
+#include <jdbc/cppconn/exception.h>
+#include <jdbc/cppconn/prepared_statement.h>
 
 //AN ENVIRONMENT VARIABLE IS USED SO THE UNIT TEST CODE CAN BE PUSHED TO GITHUB
 static std::string GlobalSQLPassword = std::getenv("InvTrendPASSWORD"); //PASSWORD IS STORED IN ENVIRONMENT VARIABLE FOR PRIVACY REASONS
@@ -101,9 +101,9 @@ bool CheckDatabase(std::string CheckID, int CheckQuantity, std::string CheckItem
 
 	while (result->next())
 	{
-		string ResultID = result->getString("ItemID").c_str();
+		std::string ResultID = result->getString("ItemID").c_str();
 		int ResultInt = result->getInt("ItemQuantity");
-		string ResultItem = result->getString("ItemName").c_str();
+		std::string ResultItem = result->getString("ItemName").c_str();
 		if (ResultID == CheckID && ResultInt == CheckQuantity && ResultItem == CheckItem)
 		{
 			IsSame = true;
@@ -131,7 +131,7 @@ bool CheckDatabase(std::string CheckID, int CheckQuantity, std::string CheckItem
 	}
 }
 
-int CheckWeatherDatabase(string CheckID, string Weather)
+int CheckWeatherDatabase(std::string CheckID, std::string Weather)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ int CheckWeatherDatabase(string CheckID, string Weather)
 
 	while (result->next())
 	{
-		string ResultID = result->getString("ItemID").c_str();
+		std::string ResultID = result->getString("ItemID").c_str();
 		int ResultInt = result->getInt(Weather);
 		if (ResultID == CheckID)
 		{
@@ -180,7 +180,7 @@ int CheckWeatherDatabase(string CheckID, string Weather)
 	}
 }
 
-int CheckTimeDatabase(string CheckID, int hour)
+int CheckTimeDatabase(std::string CheckID, int hour)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ int CheckTimeDatabase(string CheckID, int hour)
 
 	while (result->next())
 	{
-		string ResultID = result->getString("ItemID").c_str();
+		std::string ResultID = result->getString("ItemID").c_str();
 		int ResultInt = result->getInt(std::to_string(hour));
 		if (ResultID == CheckID)
 		{
@@ -229,7 +229,7 @@ int CheckTimeDatabase(string CheckID, int hour)
 	}
 }
 
-void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, string TestItemInput)
+void QuickEditDB(std::string ChangeState, std::string TestIDInput, int TestQuantityInput, std::string TestItemInput)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -303,7 +303,7 @@ void QuickEditDB(string ChangeState, string TestIDInput, int TestQuantityInput, 
 	delete con;
 }
 
-void DeleteFromSignupLoginDB(string Username)
+void DeleteFromSignupLoginDB(std::string Username)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -338,7 +338,7 @@ void DeleteFromSignupLoginDB(string Username)
 	delete con;
 }
 
-void AddToSignupLoginDB(string Username, string Password)
+void AddToSignupLoginDB(std::string Username, std::string Password)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -374,7 +374,7 @@ void AddToSignupLoginDB(string Username, string Password)
 	delete con;
 }
 
-bool CheckSignupLoginDB(string Username, string Password)
+bool CheckSignupLoginDB(std::string Username, std::string Password)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -408,8 +408,8 @@ bool CheckSignupLoginDB(string Username, string Password)
 
 	while (result->next())
 	{
-		string FoundUser = result->getString("Username").c_str();
-		string FoundPass = result->getString("Password").c_str();
+		std::string FoundUser = result->getString("Username").c_str();
+		std::string FoundPass = result->getString("Password").c_str();
 		if (FoundPass == Password)
 		{
 
@@ -450,9 +450,9 @@ namespace UnitTests
 		TEST_METHOD(StockManagementCreateFunctionWorks)
 		{
 			
-			string TestCreateIDInput = "T3S701";
+			std::string TestCreateIDInput = "T3S701";
 			int TestCreateQuantityInput = 8;
-			string TestCreateItemInput = "UnitTest0001";
+			std::string TestCreateItemInput = "UnitTest0001";
 
 			MainFrame::CreateButtonOnClick(TestCreateIDInput, TestCreateQuantityInput, TestCreateItemInput, GlobalSQLPassword);
 
@@ -464,13 +464,13 @@ namespace UnitTests
 		TEST_METHOD(StockManagementUpdateFunctionWorks)
 		{
 
-			string TestUpdateIDInput = "T3S701";
+			std::string TestUpdateIDInput = "T3S701";
 			int TestUpdateQuantityInput = 8;
-			string TestUpdateItemInput = "UnitTest0001";
+			std::string TestUpdateItemInput = "UnitTest0001";
 			QuickEditDB("CREATE", TestUpdateIDInput, TestUpdateQuantityInput, TestUpdateItemInput);
 
 			int ChangeTestUpdateQuantityInput = 5;
-			string ChangeTestUpdateItemInput = "UnitTest0002";
+			std::string ChangeTestUpdateItemInput = "UnitTest0002";
 
 			MainFrame::UpdateButtonOnClick(TestUpdateIDInput, ChangeTestUpdateQuantityInput, ChangeTestUpdateItemInput, GlobalSQLPassword);
 
@@ -482,9 +482,9 @@ namespace UnitTests
 		TEST_METHOD(StockManagementDeleteFunctionWorks)
 		{
 
-			string TestDeleteIDInput = "T3S701";
+			std::string TestDeleteIDInput = "T3S701";
 			int TestDeleteQuantityInput = 8;
-			string TestDeleteItemInput = "UnitTest0001";
+			std::string TestDeleteItemInput = "UnitTest0001";
 
 			QuickEditDB("CREATE", TestDeleteIDInput, TestDeleteQuantityInput, TestDeleteItemInput);
 
@@ -501,9 +501,9 @@ namespace UnitTests
 			std::string UserLatitude = LatLong[0];
 			std::string UserLongitude = LatLong[1];
 			
-			string TestSellIDInput = "T3S701";
+			std::string TestSellIDInput = "T3S701";
 			int TestSellQuantityInput = 8;
-			string TestSellItemInput = "UnitTest0001";
+			std::string TestSellItemInput = "UnitTest0001";
 
 			int ToSell = 2;
 			int NewQuantity = 6;
@@ -524,9 +524,9 @@ namespace UnitTests
 			std::string UserLatitude = LatLong[0];
 			std::string UserLongitude = LatLong[1];
 
-			string TestSellIDInput = "T3S701";
+			std::string TestSellIDInput = "T3S701";
 			int TestSellQuantityInput = 8;
-			string TestSellItemInput = "UnitTest0001";
+			std::string TestSellItemInput = "UnitTest0001";
 
 			QuickEditDB("CREATE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
 
@@ -577,9 +577,9 @@ namespace UnitTests
 			std::string UserLatitude = LatLong[0];
 			std::string UserLongitude = LatLong[1];
 
-			string TestSellIDInput = "T3S701";
+			std::string TestSellIDInput = "T3S701";
 			int TestSellQuantityInput = 8;
-			string TestSellItemInput = "UnitTest0001";
+			std::string TestSellItemInput = "UnitTest0001";
 
 			QuickEditDB("CREATE", TestSellIDInput, TestSellQuantityInput, TestSellItemInput);
 
@@ -608,9 +608,9 @@ namespace UnitTests
 		{
 			bool valid = false;
 
-			string TestAnalyseIDInput = "T3S701";
+			std::string TestAnalyseIDInput = "T3S701";
 			int TestAnalyseQuantityInput = 8;
-			string TestAnalyseItemInput = "UnitTest0001";
+			std::string TestAnalyseItemInput = "UnitTest0001";
 
 			QuickEditDB("CREATE", TestAnalyseIDInput, TestAnalyseQuantityInput, TestAnalyseItemInput);
 
@@ -630,7 +630,7 @@ namespace UnitTests
 		{
 			bool valid = false;
 
-			string TestAnalyseIDInput = "ti10nuws";
+			std::string TestAnalyseIDInput = "ti10nuws";
 
 			std::vector<std::variant<int, std::string>> ComparisonVector;
 			std::vector<std::variant<int, std::string>> AnalysisValidateReturn = MainFrame::AnalysisButtonOnClick(TestAnalyseIDInput, GlobalSQLPassword);
@@ -645,9 +645,9 @@ namespace UnitTests
 
 		TEST_METHOD(SignupWorksCorrectly)
 		{
-			string EnteredSignupUsername = "T3S701";
-			string EnteredSignupPassword = "UnitTest0001";
-			string PasswordShouldBe = "XqlwWhvw0001";
+			std::string EnteredSignupUsername = "T3S701";
+			std::string EnteredSignupPassword = "UnitTest0001";
+			std::string PasswordShouldBe = "XqlwWhvw0001";
 
 			MainFrame::SignupButtonOnClick(EnteredSignupUsername, EnteredSignupPassword, GlobalSQLPassword);
 
@@ -660,9 +660,9 @@ namespace UnitTests
 
 		TEST_METHOD(LoginWorksCorrectly)
 		{
-			string EnteredSignupUsername = "T3S701";
-			string EnteredSignupPassword = "UnitTest0001";
-			string PasswordEncrypted = "XqlwWhvw0001";
+			std::string EnteredSignupUsername = "T3S701";
+			std::string EnteredSignupPassword = "UnitTest0001";
+			std::string PasswordEncrypted = "XqlwWhvw0001";
 
 			AddToSignupLoginDB(EnteredSignupUsername, PasswordEncrypted);
 

@@ -2,16 +2,15 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include "stdafx.h"
 #include <cstdlib>
 #include <ctime>
 #include <string>
 #include <sstream>
 
-#include "mysql_connection.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/prepared_statement.h>
+#include <jdbc/mysql_connection.h>
+#include <jdbc/cppconn/driver.h>
+#include <jdbc/cppconn/exception.h>
+#include <jdbc/cppconn/prepared_statement.h>
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 {
@@ -343,9 +342,9 @@ void MainFrame::CreateOptions()
 
 		//Grab Values
 	    //---------------------------------------------------------------------
-		string EnteredCreateID = (CreateIDInput->GetValue()).ToStdString();
+		std::string EnteredCreateID = (CreateIDInput->GetValue()).ToStdString();
 		int EnteredCreateQuantity = wxAtoi(CreateQuantityInput->GetValue());
-		string EnteredCreateItem = (CreateItemInput->GetValue()).ToStdString();
+		std::string EnteredCreateItem = (CreateItemInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
 		CreateButtonOnClick(EnteredCreateID, EnteredCreateQuantity, EnteredCreateItem, GlobalSQLPassword);
@@ -380,7 +379,7 @@ void MainFrame::CreateOptions()
 
 		//Grab Value
 		//---------------------------------------------------------------------
-		string EnteredDeleteID = (DeleteInput->GetValue()).ToStdString();
+		std::string EnteredDeleteID = (DeleteInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
 		DeleteButtonOnClick(EnteredDeleteID, GlobalSQLPassword);
@@ -426,9 +425,9 @@ void MainFrame::CreateOptions()
 
 		//Grab Values
 		//---------------------------------------------------------------------
-		string EnteredUpdateID = (UpdateIDInput->GetValue()).ToStdString();
+		std::string EnteredUpdateID = (UpdateIDInput->GetValue()).ToStdString();
 		int EnteredUpdateQuantity = wxAtoi(UpdateQuantityInput->GetValue());
-		string EnteredUpdateItem = (UpdateItemInput->GetValue()).ToStdString();
+		std::string EnteredUpdateItem = (UpdateItemInput->GetValue()).ToStdString();
 		//---------------------------------------------------------------------
 
 		UpdateButtonOnClick(EnteredUpdateID, EnteredUpdateQuantity, EnteredUpdateItem, GlobalSQLPassword);
@@ -803,8 +802,8 @@ void MainFrame::CreateOptions()
 			AnalysisChooseArea->Show(true);
 
 			//Assigns ItemName for each Analysis option
-			WeatherCurrentItemHeading->SetLabel(*std::get_if<string>(&CheckAnalysis[0]));
-			TimeCurrentItemHeading->SetLabel(*std::get_if<string>(&CheckAnalysis[0]));
+			WeatherCurrentItemHeading->SetLabel(*std::get_if<std::string>(&CheckAnalysis[0]));
+			TimeCurrentItemHeading->SetLabel(*std::get_if<std::string>(&CheckAnalysis[0]));
 
 			//Assigns all number of products sold each weather in Weather Analysis
 			Clouds->SetLabel(wxString::Format("%d Sold", *std::get_if<int>(&CheckAnalysis[1])));

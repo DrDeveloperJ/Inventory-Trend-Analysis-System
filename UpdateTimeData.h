@@ -1,8 +1,8 @@
 #pragma once
-#include "mysql_connection.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/prepared_statement.h>
+#include <jdbc/mysql_connection.h>
+#include <jdbc/cppconn/driver.h>
+#include <jdbc/cppconn/exception.h>
+#include <jdbc/cppconn/prepared_statement.h>
 
 static void UpdateTimeDB(int hour, sql::PreparedStatement*& pstmt, sql::Connection*& con, int EnteredSellQuantity, std::string EnteredSellID)
 {

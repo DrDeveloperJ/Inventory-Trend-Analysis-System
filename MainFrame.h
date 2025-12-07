@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include "stdafx.h"
 #include <cstdlib>
 #include <wx/string.h>
 #include <nlohmann/json.hpp>
@@ -16,22 +15,22 @@
 
 #include <curl/curl.h>
 
-#include "mysql_connection.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/prepared_statement.h>
+#include <jdbc/mysql_connection.h>
+#include <jdbc/cppconn/driver.h>
+#include <jdbc/cppconn/exception.h>
+#include <jdbc/cppconn/prepared_statement.h>
 
 class MainFrame : public wxFrame
 {
 public:
 	MainFrame(const wxString& title);
-	inline static void CreateButtonOnClick(string& EnteredCreateID, int& EnteredCreateQuantity, string& EnteredCreateItem, string& GlobalSQLPassword);
-	inline static void DeleteButtonOnClick(string& EnteredDeleteID, string& GlobalSQLPassword);
-	inline static void UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword);
-	inline static void SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude, string GlobalUserName);
-	inline static std::vector<std::variant<int, std::string>> AnalysisButtonOnClick(string& EnteredAnalysisID, string& GlobalSQLPassword);
-	inline static bool LoginButtonOnClick(string& EnteredLoginUsername, string& EnteredLoginPassword, string& GlobalSQLPassword);
-	inline static void SignupButtonOnClick(string& EnteredSignupUsername, string& EnteredSignupPassword, string& GlobalSQLPassword);
+	inline static void CreateButtonOnClick(std::string& EnteredCreateID, int& EnteredCreateQuantity, std::string& EnteredCreateItem, std::string& GlobalSQLPassword);
+	inline static void DeleteButtonOnClick(std::string& EnteredDeleteID, std::string& GlobalSQLPassword);
+	inline static void UpdateButtonOnClick(std::string& EnteredUpdateID, int& EnteredUpdateQuantity, std::string& EnteredUpdateItem, std::string& GlobalSQLPassword);
+	inline static void SellButtonOnClick(std::string& EnteredSellID, int& EnteredSellQuantity, std::string& GlobalSQLPassword, std::string Latitude, std::string Longitude, std::string GlobalUserName);
+	inline static std::vector<std::variant<int, std::string>> AnalysisButtonOnClick(std::string& EnteredAnalysisID, std::string& GlobalSQLPassword);
+	inline static bool LoginButtonOnClick(std::string& EnteredLoginUsername, std::string& EnteredLoginPassword, std::string& GlobalSQLPassword);
+	inline static void SignupButtonOnClick(std::string& EnteredSignupUsername, std::string& EnteredSignupPassword, std::string& GlobalSQLPassword);
 private:
 	void CreateOptions();
 
@@ -189,7 +188,7 @@ private:
 // Stock Management Function Definitions
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------
-inline void MainFrame::CreateButtonOnClick(string& EnteredCreateID, int& EnteredCreateQuantity, string& EnteredCreateItem, string& GlobalSQLPassword)
+inline void MainFrame::CreateButtonOnClick(std::string& EnteredCreateID, int& EnteredCreateQuantity, std::string& EnteredCreateItem, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -224,7 +223,7 @@ inline void MainFrame::CreateButtonOnClick(string& EnteredCreateID, int& Entered
 
 	while (result->next())
 	{
-		string CheckID = result->getString(3).c_str();
+		std::string CheckID = result->getString(3).c_str();
 		if (CheckID == EnteredCreateID)
 		{
 			UniqueID = false;
@@ -255,7 +254,7 @@ inline void MainFrame::CreateButtonOnClick(string& EnteredCreateID, int& Entered
 }
 
 
-inline void MainFrame::DeleteButtonOnClick(string& EnteredDeleteID, string& GlobalSQLPassword)
+inline void MainFrame::DeleteButtonOnClick(std::string& EnteredDeleteID, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 		//-----------------------------------------------------------------------------------------------------
@@ -291,7 +290,7 @@ inline void MainFrame::DeleteButtonOnClick(string& EnteredDeleteID, string& Glob
 
 	while (result->next())
 	{
-		string CheckID = result->getString(3).c_str();
+		std::string CheckID = result->getString(3).c_str();
 		if (CheckID == EnteredDeleteID)
 		{
 			IDFound = true;
@@ -319,7 +318,7 @@ inline void MainFrame::DeleteButtonOnClick(string& EnteredDeleteID, string& Glob
 	delete result;
 }
 
-inline void MainFrame::UpdateButtonOnClick(string& EnteredUpdateID, int& EnteredUpdateQuantity, string& EnteredUpdateItem, string& GlobalSQLPassword)
+inline void MainFrame::UpdateButtonOnClick(std::string& EnteredUpdateID, int& EnteredUpdateQuantity, std::string& EnteredUpdateItem, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 		//-----------------------------------------------------------------------------------------------------
@@ -355,7 +354,7 @@ inline void MainFrame::UpdateButtonOnClick(string& EnteredUpdateID, int& Entered
 
 	while (result->next())
 	{
-		string CheckID = result->getString(3).c_str();
+		std::string CheckID = result->getString(3).c_str();
 		if (CheckID == EnteredUpdateID)
 		{
 			IDFound = true;
@@ -392,7 +391,7 @@ static size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdat
 	return size * nmemb;
 }
 
-inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSellQuantity, string& GlobalSQLPassword, string Latitude, string Longitude, string GlobalUserName)
+inline void MainFrame::SellButtonOnClick(std::string& EnteredSellID, int& EnteredSellQuantity, std::string& GlobalSQLPassword, std::string Latitude, std::string Longitude, std::string GlobalUserName)
 {
 
 	//Establishes a connection with the MySQL Database
@@ -429,7 +428,7 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 
 	while (result->next())
 	{
-		string CheckID = result->getString(3).c_str();
+		std::string CheckID = result->getString(3).c_str();
 		if (CheckID == EnteredSellID)
 		{
 			IDFound = true;
@@ -561,7 +560,7 @@ inline void MainFrame::SellButtonOnClick(string& EnteredSellID, int& EnteredSell
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------
 
-inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnClick(string& EnteredAnalysisID, string& GlobalSQLPassword)
+inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnClick(std::string& EnteredAnalysisID, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -598,8 +597,8 @@ inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnCl
 
 	while (result->next())
 	{
-		string CheckID = result->getString(3).c_str();
-		string ItemName = result->getString("ItemName").c_str();
+		std::string CheckID = result->getString(3).c_str();
+		std::string ItemName = result->getString("ItemName").c_str();
 		if (CheckID == EnteredAnalysisID)
 		{
 			std::vector<std::variant<int, std::string>> ReturnedAnalysisData;
@@ -656,7 +655,7 @@ inline std::vector<std::variant<int, std::string>> MainFrame::AnalysisButtonOnCl
 // ------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------
 
-inline bool MainFrame::LoginButtonOnClick(string& EnteredLoginUsername, string& EnteredLoginPassword, string& GlobalSQLPassword)
+inline bool MainFrame::LoginButtonOnClick(std::string& EnteredLoginUsername, std::string& EnteredLoginPassword, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -689,11 +688,11 @@ inline bool MainFrame::LoginButtonOnClick(string& EnteredLoginUsername, string& 
 
 	while (result->next())
 	{
-		string CheckUsername = result->getString("Username").c_str();
-		string FoundPassword = result->getString("Password").c_str();
+		std::string CheckUsername = result->getString("Username").c_str();
+		std::string FoundPassword = result->getString("Password").c_str();
 		if (CheckUsername == EnteredLoginUsername)
 		{
-			string AlteredPass = "";
+			std::string AlteredPass = "";
 
 			//Performs a Caesar Cipher without altering any numbers or other characters
 			for (int i = 0; i < FoundPassword.length(); i++) {
@@ -730,7 +729,7 @@ inline bool MainFrame::LoginButtonOnClick(string& EnteredLoginUsername, string& 
 }
 
 
-inline void MainFrame::SignupButtonOnClick(string& EnteredSignupUsername, string& EnteredSignupPassword, string& GlobalSQLPassword)
+inline void MainFrame::SignupButtonOnClick(std::string& EnteredSignupUsername, std::string& EnteredSignupPassword, std::string& GlobalSQLPassword)
 {
 	//Establishes a connection with the MySQL Database
 	//-----------------------------------------------------------------------------------------------------
@@ -758,7 +757,7 @@ inline void MainFrame::SignupButtonOnClick(string& EnteredSignupUsername, string
 	con->setSchema("itemdatabase");
 	//-----------------------------------------------------------------------------------------------------
 
-	string AlteredPass = "";
+	std::string AlteredPass = "";
 
 	//Performs a Caesar Cipher without altering any numbers or other characters
 	for (int i = 0; i < EnteredSignupPassword.length(); i++) {
@@ -789,7 +788,7 @@ inline void MainFrame::SignupButtonOnClick(string& EnteredSignupUsername, string
 
 	while (result->next())
 	{
-		string CheckUsername = result->getString("Username").c_str();
+		std::string CheckUsername = result->getString("Username").c_str();
 		if (CheckUsername == EnteredSignupUsername)
 		{
 			ExistsAlready = true;

@@ -7,6 +7,8 @@
 *SciLexer.h
 *Scintilla.h
 
+out/
+
 # The rest was copied and pasted from the GitHub Official VisualStudio and C++ Gitignore Blog on GitHub
 
 # User-specific files
